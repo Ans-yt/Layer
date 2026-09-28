@@ -69,7 +69,7 @@ const starterElements = (id: string): DesignElement[] => {
 
 const patternElement = (type: 'dots' | 'grid' | 'stripes'): DesignElement => makeElement('rect', { name: `${type[0].toUpperCase()}${type.slice(1)} pattern`, width: 360, height: 180, pattern: { enabled: true, type, scale: 1, spacing: 18, rotation: type === 'stripes' ? 45 : 0, opacity: 0.28, color: '#f5b847' }, fill: '#11151b', stroke: '#3a414d' })
 const savedPatternType = (asset: AssetRecord): 'dots' | 'grid' | 'stripes' => asset.metadata?.patternType === 'stripes' ? 'stripes' : asset.metadata?.patternType === 'dots' ? 'dots' : 'grid'
-const LAYER_LOGO_URL = new URL('../../img/logo-circle.png', import.meta.url).href
+const LAYER_LOGO_URL = new URL('../../img/09-logo-circle.png', import.meta.url).href
 
 export function AssetsPanel(props: AssetsPanelProps) {
   const { project, onCommit, onNotify } = props
