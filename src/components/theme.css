@@ -1,0 +1,383 @@
+/*
+ * Workspace themes live here rather than in styles.css.  The editor's older
+ * selectors set palette variables on .layer-app, so the chrome surfaces below
+ * rebind the palette at a higher scope.  The canvas zone and authored artboard
+ * deliberately get the neutral editor canvas palette back.
+ */
+:root[data-theme="black"], body[data-theme="black"], .layer-app[data-theme="black"] {
+  --layer-theme-ink: #0b0c0e;
+  --layer-theme-ink-2: #0f1115;
+  --layer-theme-panel: #12151a;
+  --layer-theme-panel-2: #171b22;
+  --layer-theme-panel-3: #202630;
+  --layer-theme-line: #2b323e;
+  --layer-theme-line-soft: #202630;
+  --layer-theme-text: #f4f1e8;
+  --layer-theme-muted: #a8b1c0;
+  --layer-theme-muted-2: #758092;
+  --layer-theme-accent: #f5b847;
+  --layer-theme-accent-bright: #ffd278;
+  --layer-theme-blue: #8dccff;
+  --layer-theme-green: #85d3a0;
+  --layer-theme-red: #e78e87;
+}
+
+:root[data-theme="white"], body[data-theme="white"], .layer-app[data-theme="white"] {
+  --layer-theme-ink: #e9e6de;
+  --layer-theme-ink-2: #f6f4ef;
+  --layer-theme-panel: #ffffff;
+  --layer-theme-panel-2: #f3f1eb;
+  --layer-theme-panel-3: #e8e4db;
+  --layer-theme-line: #b9b5ad;
+  --layer-theme-line-soft: #d9d5cc;
+  --layer-theme-text: #20252b;
+  --layer-theme-muted: #4e5963;
+  --layer-theme-muted-2: #66727d;
+  --layer-theme-accent: #9a520b;
+  --layer-theme-accent-bright: #7d3f08;
+  --layer-theme-blue: #1f5f8f;
+  --layer-theme-green: #23724a;
+  --layer-theme-red: #a13d37;
+}
+
+:root[data-theme="ocean"], body[data-theme="ocean"], .layer-app[data-theme="ocean"] {
+  --layer-theme-ink: #123a37;
+  --layer-theme-ink-2: #164541;
+  --layer-theme-panel: #1a4b47;
+  --layer-theme-panel-2: #1d5751;
+  --layer-theme-panel-3: #28655f;
+  --layer-theme-line: #52817a;
+  --layer-theme-line-soft: #376b64;
+  --layer-theme-text: #f4f0df;
+  --layer-theme-muted: #c5d8d0;
+  --layer-theme-muted-2: #a9c2b9;
+  --layer-theme-accent: #e1c68b;
+  --layer-theme-accent-bright: #f1dcae;
+  --layer-theme-blue: #9fc6c2;
+  --layer-theme-green: #b7d8af;
+  --layer-theme-red: #f0a59b;
+}
+
+:root[data-theme="deep-blue"], body[data-theme="deep-blue"], .layer-app[data-theme="deep-blue"] {
+  --layer-theme-ink: #071a36;
+  --layer-theme-ink-2: #0b254a;
+  --layer-theme-panel: #0e2a52;
+  --layer-theme-panel-2: #12345f;
+  --layer-theme-panel-3: #1c4677;
+  --layer-theme-line: #416b9d;
+  --layer-theme-line-soft: #285487;
+  --layer-theme-text: #f3f7f6;
+  --layer-theme-muted: #c5d6e9;
+  --layer-theme-muted-2: #a5bdd9;
+  --layer-theme-accent: #cce8f5;
+  --layer-theme-accent-bright: #e8f7fb;
+  --layer-theme-blue: #9fd0eb;
+  --layer-theme-green: #a9dab7;
+  --layer-theme-red: #f0a09c;
+}
+
+:root[data-theme="espresso"], body[data-theme="espresso"], .layer-app[data-theme="espresso"] {
+  --layer-theme-ink: #3E2723;
+  --layer-theme-ink-2: #452d29;
+  --layer-theme-panel: #4f322e;
+  --layer-theme-panel-2: #5a3934;
+  --layer-theme-panel-3: #6c4541;
+  --layer-theme-line: #966e70;
+  --layer-theme-line-soft: #744b4a;
+  --layer-theme-text: #EDE6DA;
+  --layer-theme-muted: #ead9d5;
+  --layer-theme-muted-2: #d0b5b4;
+  --layer-theme-accent: #EAC6D0;
+  --layer-theme-accent-bright: #f6dfe6;
+  --layer-theme-blue: #c5dce5;
+  --layer-theme-green: #b7d4b5;
+  --layer-theme-red: #f2aaa2;
+}
+
+:root[data-theme="rose"], body[data-theme="rose"], .layer-app[data-theme="rose"] {
+  --layer-theme-ink: #4A4147;
+  --layer-theme-ink-2: #5a4e56;
+  --layer-theme-panel: #70626B;
+  --layer-theme-panel-2: #7f707a;
+  --layer-theme-panel-3: #9C8A95;
+  --layer-theme-line: #C7B3BE;
+  --layer-theme-line-soft: #9C8A95;
+  --layer-theme-text: #fff8fc;
+  --layer-theme-muted: #f4e9ef;
+  --layer-theme-muted-2: #ead6e0;
+  --layer-theme-accent: #F9DCEC;
+  --layer-theme-accent-bright: #fff0f8;
+  --layer-theme-blue: #d9e0ec;
+  --layer-theme-green: #c9e3cd;
+  --layer-theme-red: #ffd2d1;
+}
+
+/* Body and shell framing only. The artboard is reset below. */
+:root[data-theme] body,
+body[data-theme] {
+  background: #0a0c0f;
+}
+
+.layer-app[data-theme] {
+  background: #0a0c0f;
+  color: var(--layer-theme-text);
+  color-scheme: dark;
+}
+
+body .layer-app[data-theme] .canvas-zone {
+  --ink: #0b0c0e;
+  --ink-2: #0f1115;
+  --panel: #12151a;
+  --panel-2: #171b22;
+  --panel-3: #1c222b;
+  --line: #2b323e;
+  --line-soft: #202630;
+  --muted: #8993a4;
+  --muted-2: #5d6675;
+  --text: #f4f1e8;
+  --amber: #f5b847;
+  --amber-bright: #ffd278;
+  --blue: #8dccff;
+  --green: #85d3a0;
+  --red: #e78e87;
+  background: #0a0c0f;
+  color: #f4f1e8;
+}
+
+/* Rebind the existing variable-based chrome without allowing the palette to
+ * flow into authored layers. */
+body .layer-app[data-theme] :is(.topbar, .left-rail, .pages-sidebar, .right-panel, .canvas-toolbar, .canvas-statusbar, .popover, .context-menu, .toast, .shortcuts-modal, .tutorial-card, .corner-editor) {
+  --ink: var(--layer-theme-ink);
+  --ink-2: var(--layer-theme-ink-2);
+  --panel: var(--layer-theme-panel);
+  --panel-2: var(--layer-theme-panel-2);
+  --panel-3: var(--layer-theme-panel-3);
+  --line: var(--layer-theme-line);
+  --line-soft: var(--layer-theme-line-soft);
+  --muted: var(--layer-theme-muted);
+  --muted-2: var(--layer-theme-muted-2);
+  --text: var(--layer-theme-text);
+  --amber: var(--layer-theme-accent);
+  --amber-bright: var(--layer-theme-accent-bright);
+  --blue: var(--layer-theme-blue);
+  --green: var(--layer-theme-green);
+  --red: var(--layer-theme-red);
+  color: var(--text);
+}
+
+body .layer-app[data-theme] :is(.topbar, .left-rail, .pages-sidebar, .right-panel, .workspace-panel) {
+  background: var(--panel);
+}
+
+body .layer-app[data-theme] .topbar,
+body .layer-app[data-theme] .left-rail,
+body .layer-app[data-theme] .pages-sidebar,
+body .layer-app[data-theme] .right-panel {
+  background: var(--ink-2);
+  border-color: var(--line);
+}
+
+body .layer-app[data-theme] :is(.workspace-panel, .panel-heading, .connections-header) {
+  border-color: var(--line-soft);
+}
+
+body .layer-app[data-theme] :is(.panel-heading, .connections-header) {
+  background: var(--ink-2);
+  color: var(--text);
+}
+
+body .layer-app[data-theme] :is(.panel-explainer, .asset-intro, .provider-note, .mcp-note, .prompt-preview, .page-settings, .empty-shortcuts, .mini-search, .viewport-picker, .mcp-card, .empty-panel) {
+  border-color: var(--line-soft);
+  background: var(--panel);
+  color: var(--muted);
+}
+
+body .layer-app[data-theme] :is(.panel-explainer, .asset-intro, .provider-note, .mcp-note, .prompt-preview, .page-settings, .empty-shortcuts) strong {
+  color: var(--text);
+}
+
+body .layer-app[data-theme] .viewport-picker {
+  color: var(--blue);
+}
+
+body .layer-app[data-theme] .viewport-picker select {
+  background: transparent;
+  color: var(--text);
+}
+
+body .layer-app[data-theme] .viewport-picker option {
+  background: var(--panel);
+  color: var(--text);
+}
+
+body .layer-app[data-theme] :is(.canvas-toolbar, .canvas-statusbar) {
+  background: var(--panel);
+  border-color: var(--line);
+  color: var(--text);
+}
+
+body .layer-app[data-theme] .popover,
+body .layer-app[data-theme] .context-menu,
+body .layer-app[data-theme] :is(.shortcuts-modal, .tutorial-card, .corner-editor) {
+  background: var(--panel);
+  border-color: var(--line);
+}
+
+body .layer-app[data-theme] .toast {
+  background: color-mix(in srgb, var(--panel) 90%, var(--green));
+  border-color: color-mix(in srgb, var(--green) 55%, var(--line));
+}
+
+body .layer-app[data-theme] :is(input, textarea, select) {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--panel) 72%, #000 28%);
+  color: var(--text);
+}
+
+body .layer-app[data-theme] :is(input, textarea, select)::placeholder {
+  color: var(--muted-2);
+}
+
+body .layer-app[data-theme] :is(input, textarea, select):hover {
+  border-color: var(--blue);
+}
+
+body .layer-app[data-theme] .color-picker-trigger {
+  --input-bg: var(--panel-2);
+  border-color: var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+body .layer-app[data-theme] .color-picker-popover {
+  border-color: var(--line);
+  background: var(--panel);
+  color: var(--text);
+}
+
+body .layer-app[data-theme] :is(.secondary-button, .toggle-button, .status-button, .tool-chip, .topbar-button, .mode-button) {
+  border-color: var(--line);
+  background: var(--panel);
+  color: var(--muted);
+}
+
+body .layer-app[data-theme] :is(.secondary-button, .toggle-button, .status-button, .tool-chip, .topbar-button, .mode-button):hover:not(:disabled) {
+  border-color: var(--amber);
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+body .layer-app[data-theme] .primary-button {
+  border-color: var(--amber);
+  background: var(--amber);
+  color: #11151a;
+}
+
+body .layer-app[data-theme] .primary-button:hover:not(:disabled) {
+  border-color: var(--amber-bright);
+  background: var(--amber-bright);
+}
+
+body .layer-app[data-theme="white"] {
+  color-scheme: light;
+}
+
+body .layer-app[data-theme] :is(.icon-button, .rail-button):hover:not(:disabled) {
+  border-color: var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+body .layer-app[data-theme] :is(.panel-tabs button, .theme-card):hover {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+body .layer-app[data-theme] .theme-card.active {
+  border-color: var(--amber);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--amber) 35%, transparent);
+  color: var(--text);
+}
+
+/* Palette isolation boundary for the authored document and prototype. */
+body .layer-app[data-theme] .artboard {
+  --ink: #0b0c0e;
+  --ink-2: #0f1115;
+  --panel: #12151a;
+  --panel-2: #171b22;
+  --panel-3: #1c222b;
+  --line: #2b323e;
+  --line-soft: #202630;
+  --muted: #8993a4;
+  --muted-2: #5d6675;
+  --text: #f4f1e8;
+  --amber: #f5b847;
+  --amber-bright: #ffd278;
+  --blue: #8dccff;
+  --green: #85d3a0;
+  --red: #e78e87;
+  border-color: #3a424f;
+  color: #f4f1e8;
+}
+
+/* A chooser may be rendered in a body portal in a host application. */
+:root[data-theme] .theme-chooser,
+body[data-theme] .theme-chooser,
+body .layer-app[data-theme] .theme-chooser {
+  --ink: var(--layer-theme-ink);
+  --ink-2: var(--layer-theme-ink-2);
+  --panel: var(--layer-theme-panel);
+  --panel-2: var(--layer-theme-panel-2);
+  --panel-3: var(--layer-theme-panel-3);
+  --line: var(--layer-theme-line);
+  --line-soft: var(--layer-theme-line-soft);
+  --muted: var(--layer-theme-muted);
+  --muted-2: var(--layer-theme-muted-2);
+  --text: var(--layer-theme-text);
+  --amber: var(--layer-theme-accent);
+  --amber-bright: var(--layer-theme-accent-bright);
+  --blue: var(--layer-theme-blue);
+  --green: var(--layer-theme-green);
+  --red: var(--layer-theme-red);
+  background: var(--panel);
+  border-color: var(--line);
+  color: var(--text);
+}
+
+:root[data-theme] .theme-chooser-backdrop,
+body[data-theme] .theme-chooser-backdrop {
+  color: var(--layer-theme-text);
+}
+
+:root[data-theme] .theme-chooser .theme-card,
+body[data-theme] .theme-chooser .theme-card {
+  background: var(--layer-theme-panel-2);
+  border-color: var(--layer-theme-line);
+  color: var(--layer-theme-muted);
+}
+
+:root[data-theme] .theme-chooser .theme-card:hover,
+:root[data-theme] .theme-chooser .theme-card.active,
+body[data-theme] .theme-chooser .theme-card:hover,
+body[data-theme] .theme-chooser .theme-card.active {
+  background: var(--layer-theme-panel-3);
+  border-color: var(--layer-theme-accent);
+  color: var(--layer-theme-text);
+}
+
+body .layer-app[data-theme] ::selection,
+:root[data-theme] .theme-chooser ::selection {
+  background: color-mix(in srgb, var(--layer-theme-accent) 48%, #000);
+  color: var(--layer-theme-text);
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme="white"] body { color-scheme: light; }
+}
+
+@media (max-width: 650px) {
+  .theme-chooser-backdrop { padding: 12px; }
+  .theme-chooser { max-height: calc(100dvh - 24px); overflow: auto; padding: 15px; }
+  .theme-chooser-footer { align-items: stretch; flex-direction: column; }
+  .theme-chooser-footer .primary-button { width: 100%; }
+}

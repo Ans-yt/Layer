@@ -1,0 +1,202 @@
+{
+  "image_generation_calls": 2,
+  "source_logo": "C:\\Users\\Administrateur\\Documents\\GitHub\\Layer\\img\\logo-circle.png",
+  "source_lockup": "C:\\Users\\Administrateur\\Documents\\GitHub\\Layer\\img\\layer logo banner.png",
+  "palette": {
+    "Graphite": "#202329",
+    "Dusty rose": "#C88DAB",
+    "Warm ivory": "#F6F3EE",
+    "Soft rose": "#E6D9E1"
+  },
+  "assets": [
+    {
+      "file": "08-transparent-lockup.png",
+      "size": [
+        1004,
+        292
+      ],
+      "method": "Coded extraction from existing generated logo",
+      "purpose": "Transparent logo and original wordmark for light backgrounds; raster, not vector."
+    },
+    {
+      "file": "09-transparent-lockup-light.png",
+      "size": [
+        1004,
+        292
+      ],
+      "method": "Coded recoloring of existing generated logo",
+      "purpose": "Transparent logo and original wordmark for dark backgrounds."
+    },
+    {
+      "file": "01-github-banner.png",
+      "size": [
+        1600,
+        640
+      ],
+      "method": "ImageGen call 1; coded resize",
+      "purpose": "Repository README header."
+    },
+    {
+      "file": "02-video-invitation.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "method": "ImageGen call 2 concept; code recomposition with original logo to remove generation artifacts",
+      "purpose": "16:9 invitation card for the video segment about Layer. Put your actual link in the description."
+    },
+    {
+      "file": "03-social-preview.png",
+      "size": [
+        1200,
+        630
+      ],
+      "method": "Code + existing logo",
+      "purpose": "Link preview or general horizontal social card."
+    },
+    {
+      "file": "04-square-promo.png",
+      "size": [
+        1080,
+        1080
+      ],
+      "method": "Code + existing logo",
+      "purpose": "Square social announcement; no release date or availability claim."
+    },
+    {
+      "file": "05-desktop-wallpaper.png",
+      "size": [
+        2560,
+        1440
+      ],
+      "method": "Code + existing logo",
+      "purpose": "2560 x 1440 desktop wallpaper."
+    },
+    {
+      "file": "06-profile-avatar.png",
+      "size": [
+        512,
+        512
+      ],
+      "method": "Code resize of supplied PNG",
+      "purpose": "Circular avatar with transparent exterior."
+    },
+    {
+      "file": "07-app-icon.png",
+      "size": [
+        512,
+        512
+      ],
+      "method": "Code + existing logo",
+      "purpose": "Square app icon with an opaque ivory background."
+    },
+    {
+      "file": "icons/icon-16.png",
+      "size": [
+        16,
+        16
+      ],
+      "method": "Code resize",
+      "purpose": "PNG icon; the 16 px version is necessarily simplified by downsampling the supplied raster."
+    },
+    {
+      "file": "icons/icon-32.png",
+      "size": [
+        32,
+        32
+      ],
+      "method": "Code resize",
+      "purpose": "PNG icon; the 16 px version is necessarily simplified by downsampling the supplied raster."
+    },
+    {
+      "file": "icons/icon-48.png",
+      "size": [
+        48,
+        48
+      ],
+      "method": "Code resize",
+      "purpose": "PNG icon; the 16 px version is necessarily simplified by downsampling the supplied raster."
+    },
+    {
+      "file": "icons/icon-64.png",
+      "size": [
+        64,
+        64
+      ],
+      "method": "Code resize",
+      "purpose": "PNG icon; the 16 px version is necessarily simplified by downsampling the supplied raster."
+    },
+    {
+      "file": "icons/icon-128.png",
+      "size": [
+        128,
+        128
+      ],
+      "method": "Code resize",
+      "purpose": "PNG icon; the 16 px version is necessarily simplified by downsampling the supplied raster."
+    },
+    {
+      "file": "icons/icon-180.png",
+      "size": [
+        180,
+        180
+      ],
+      "method": "Code resize",
+      "purpose": "PNG icon; the 16 px version is necessarily simplified by downsampling the supplied raster."
+    },
+    {
+      "file": "icons/icon-192.png",
+      "size": [
+        192,
+        192
+      ],
+      "method": "Code resize",
+      "purpose": "PNG icon; the 16 px version is necessarily simplified by downsampling the supplied raster."
+    },
+    {
+      "file": "icons/icon-256.png",
+      "size": [
+        256,
+        256
+      ],
+      "method": "Code resize",
+      "purpose": "PNG icon; the 16 px version is necessarily simplified by downsampling the supplied raster."
+    },
+    {
+      "file": "icons/icon-512.png",
+      "size": [
+        512,
+        512
+      ],
+      "method": "Code resize",
+      "purpose": "PNG icon; the 16 px version is necessarily simplified by downsampling the supplied raster."
+    },
+    {
+      "file": "10-video-lower-third.png",
+      "size": [
+        960,
+        240
+      ],
+      "method": "Code + existing logo",
+      "purpose": "Transparent-corner title plate to position over your video."
+    },
+    {
+      "file": "11-video-cta-overlay.png",
+      "size": [
+        960,
+        240
+      ],
+      "method": "Code + existing logo",
+      "purpose": "Invitation overlay for the video segment about Layer."
+    },
+    {
+      "file": "12-palette-card.png",
+      "size": [
+        1200,
+        720
+      ],
+      "method": "Code + existing logo",
+      "purpose": "Palette reference for future assets."
+    }
+  ]
+}

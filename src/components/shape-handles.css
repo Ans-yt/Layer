@@ -1,0 +1,8 @@
+/* Enlarge pointer targets without changing the visible geometry or stacking. */
+.canvas-element > .resize-handle::before {
+  content: '';
+  position: absolute;
+  inset: calc(-6px / var(--canvas-handle-zoom, 1));
+}
+.canvas-element > .resize-handle,
+.canvas-element > .rotation-handle { touch-action: none; }

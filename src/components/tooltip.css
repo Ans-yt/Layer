@@ -1,0 +1,31 @@
+.layer-tooltip {
+  position: fixed;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: min(260px, calc(100vw - 16px));
+  padding: 8px 10px;
+  border: 1px solid #465160;
+  border-radius: 6px;
+  background: #1a2028;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .38);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  animation: tooltip-appear 100ms ease-out;
+}
+.layer-tooltip kbd {
+  flex: none;
+  padding: 1px 4px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: #10151b;
+  color: #c1c8d2;
+  font: 10px var(--font-mono);
+}
+@keyframes tooltip-appear { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .layer-tooltip { animation: none; } }

@@ -1,0 +1,36 @@
+{
+  "name": "layer-editor",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build && node scripts/build-preview.mjs",
+    "preview": "vite preview",
+    "start": "node server/index.mjs",
+    "test": "vitest run",
+    "test:server": "node --test tests/server*.mjs",
+    "test:e2e": "node scripts/browser-check.mjs",
+    "test:chat": "node scripts/chat-polish-check.mjs",
+    "test:polish": "node scripts/micro-fixes-check.mjs",
+    "test:features": "node scripts/feature-check.mjs"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "fflate": "^0.8.3",
+    "html-to-image": "^1.11.13",
+    "jsdom": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "tesseract.js": "^7.0.0",
+    "typescript": "latest",
+    "vite": "latest",
+    "vitest": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "playwright": "^1.63.0"
+  }
+}
