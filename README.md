@@ -1,3 +1,5 @@
+![Layer — a visual website editor](img/01-github-banner.png)
+
 # Layer
 
 Layer is a local-first visual website design and prototyping editor. It keeps pages, layers, responsive rules, components, interactions, assets, notes, AI context, and export data in one inspectable document.
