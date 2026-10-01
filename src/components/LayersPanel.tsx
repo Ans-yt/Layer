@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { DragEvent } from 'react'
-import { Icon } from './Icon'
+import { Icon, type IconName } from './Icon'
 import { InlineRename } from './InlineRename'
 import { filterLayerTree } from '../lib/layer-search'
 import { isLockedByAncestor } from '../lib/operations'
@@ -31,6 +31,21 @@ export function LayersPanel({ page, selectedIds, onSelect, onToggleVisible, onTo
   const children = (parentId: string) => page.elements.filter((element) => element.parentId === parentId && visible.has(element.id))
   const isContainer = (element: DesignElement) => Boolean(element.layout)
   const isLocked = (element: DesignElement) => element.locked || isLockedByAncestor(page, element.id)
+  const iconFor = (element: DesignElement): IconName => {
+    if (element.name.toLowerCase().includes('note')) return 'pin'
+    if (element.type === 'text') return 'text'
+    if (element.type === 'image') return 'image'
+    if (element.type === 'icon') return 'icon'
+    if (element.type === 'section' || element.type === 'footer') return 'section'
+    if (element.type === 'group') return 'group'
+    if (element.type === 'frame' || element.type === 'modal') return 'frame'
+    if (element.type === 'line') return 'minus'
+    if (element.type === 'button') return 'cursor'
+    if (element.type === 'nav') return 'arrow-right'
+    if (element.type === 'form' || element.type === 'input') return 'page'
+    if (element.type === 'tabs' || element.type === 'accordion') return 'grid'
+    return 'shape'
+  }
   const beginRename = (element: DesignElement) => {
     if (isLocked(element)) return
     restoreFocus.current = element.id
@@ -77,7 +92,7 @@ export function LayersPanel({ page, selectedIds, onSelect, onToggleVisible, onTo
         onDoubleClick={() => beginRename(element)}
       >
         {hasChildren ? <button className="layer-disclosure" disabled={Boolean(needle)} aria-expanded={isOpen} data-tooltip={needle ? 'Matching groups stay expanded during search' : isOpen ? 'Collapse group' : 'Expand group'} onDoubleClick={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); setExpanded((current) => { const next = new Set(current); next.has(element.id) ? next.delete(element.id) : next.add(element.id); return next }) }} aria-label={isOpen ? 'Collapse group' : 'Expand group'}><Icon name={isOpen ? 'chevron-down' : 'chevron-right'} size={12} /></button> : <span className="layer-disclosure-spacer" />}
-        <span className="layer-type"><Icon name={element.type === 'text' ? 'text' : element.type === 'image' ? 'image' : element.type === 'icon' ? 'icon' : element.type === 'section' ? 'section' : element.type === 'group' ? 'group' : element.type === 'button' ? 'bolt' : 'shape'} size={13} /></span>
+         <span className="layer-type"><Icon name={iconFor(element)} size={13} /></span>
         {editingId === element.id ? <InlineRename value={element.name} label="Layer name" className="layer-rename-input" onCommit={(name) => { setEditingId(null); onRename(element.id, name) }} onCancel={() => setEditingId(null)} /> :
           <button className="layer-name" ref={(node) => { if (node) nameButtons.current.set(element.id, node); else nameButtons.current.delete(element.id) }} aria-pressed={selectedIds.includes(element.id)} data-tooltip={isLocked(element) ? `${element.name} · Locked` : `${element.name} · Double-click or F2 to rename`} onKeyDown={(event) => { if (event.key === 'F2') { event.preventDefault(); event.stopPropagation(); beginRename(element) } }}>{element.name}</button>}
         {element.componentId && <span className="component-dot" data-tooltip="Component" />}
@@ -90,12 +105,13 @@ export function LayersPanel({ page, selectedIds, onSelect, onToggleVisible, onTo
   return <section className="layers-section">
     <div className="section-header"><span className="section-title"><Icon name="layers" size={14} /> Layers</span><div className="layers-heading-actions">
       <span className="section-count" aria-label={needle ? `${matches.size} matching layers` : `${page.elements.length} layers`}>{needle ? `${matches.size}/${page.elements.length}` : page.elements.length}</span>
-      <button className="icon-button tiny" onClick={onGroup} disabled={!onGroup || selectedIds.length < 2} aria-label="Group selected layers" data-tooltip={selectedIds.length < 2 ? 'Select at least two layers to group' : 'Group selected layers'}><Icon name="group" size={13} /></button>
+       <button className="icon-button tiny" onClick={onGroup} disabled={!onGroup || selectedIds.length < 2} aria-label="Group layers" data-tooltip={selectedIds.length < 2 ? 'Select at least two layers to group' : 'Group selected layers'}><Icon name="group" size={13} /></button>
     </div></div>
-    <div className="mini-search layer-search"><Icon name="search" size={13} />
-      <input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape' && query) { event.preventDefault(); event.stopPropagation(); setQuery('') } }} placeholder="Find layer" aria-label="Find layer" />
-      {query && <button className="icon-button tiny" aria-label="Clear layer search" data-tooltip="Clear search" data-tooltip-shortcut="Esc" onClick={() => { setQuery(''); searchRef.current?.focus() }}><Icon name="close" size={12} /></button>}
-    </div>
+     <div className="mini-search layer-search" role="search">
+       <Icon name="search" size={13} />
+       <input ref={searchRef} type="search" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape' && query) { event.preventDefault(); event.stopPropagation(); setQuery('') } }} placeholder="Find layer" aria-label="Find layer" />
+       <button type="button" className="layer-search-clear" aria-label="Clear layer search" data-tooltip="Clear search" data-tooltip-shortcut="Esc" disabled={!query} onClick={() => { setQuery(''); searchRef.current?.focus() }}><Icon name="close" size={12} /></button>
+     </div>
     <div className="layers-help">{needle ? `${matches.size} match${matches.size === 1 ? '' : 'es'} · includes nested layers` : 'Drag to nest or reorder. Double-click a name to rename.'}</div>
     <div className="layers-list">{roots.length ? roots.map((element) => renderRow(element)) : <div className="empty-inline" role="status">{needle ? 'No matching layers. Try a name, type, or text.' : 'No layers yet. Add one from the toolbar.'}</div>}</div>
   </section>

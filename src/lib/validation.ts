@@ -9,6 +9,7 @@ import type {
   LayoutRules,
   McpConnection,
   Page,
+  PageBackgroundProvenance,
   Project,
   ProjectSettings,
   ProviderRecord,
@@ -46,6 +47,7 @@ const DISALLOWED_CSS_PATTERN = /[<>;{}]|url\s*\(|expression\s*\(|javascript\s*:|
 const SAFE_COLOR_PATTERN = /^(?:transparent|currentColor|inherit|initial|unset|none|#[0-9a-f]{3,8}|(?:rgb|rgba|hsl|hsla)\([0-9.%\s,+-]+\)|[a-z][a-z0-9 -]{0,32})$/i
 const SAFE_SVG_DATA_PATTERN = /^data:image\/svg\+xml(?:;[^,]*)?,/i
 const SAFE_IMAGE_DATA_PATTERN = /^data:image\/(?:png|jpe?g|gif|webp|avif|svg\+xml)(?:;[^,]*)?,/i
+const LEGACY_THEME_PAGE_BACKGROUNDS = new Set(['#0b0c0e'])
 
 export interface ValidationIssue {
   path: string
@@ -490,6 +492,11 @@ const validatePage = (value: unknown, path: string, issues: ValidationIssue[]): 
       width: numberValue(bp.width, `${path}.breakpoints[${index}].width`, issues, 1, 100_000),
     }
   })
+  const background = safeCssColor(input.background, `${path}.background`, issues, '#ffffff')
+  const rawProvenance = input.backgroundProvenance ?? input.backgroundSource
+  const backgroundProvenance: PageBackgroundProvenance = rawProvenance === undefined
+    ? (LEGACY_THEME_PAGE_BACKGROUNDS.has(background.trim().toLowerCase()) ? 'theme' : 'custom')
+    : enumValue(rawProvenance, `${path}.backgroundProvenance`, issues, ['theme', 'custom'] as const, 'custom')
   return {
     id: idValue(input.id, `${path}.id`, issues),
     name: stringValue(input.name, `${path}.name`, issues, { max: PROJECT_LIMITS.maxNameLength }),
@@ -498,7 +505,8 @@ const validatePage = (value: unknown, path: string, issues: ValidationIssue[]): 
     ...(input.userGuides === undefined ? {} : { userGuides: Array.isArray(input.userGuides) ? arrayValue<unknown>(input.userGuides, `${path}.userGuides`, issues, 500, true).map((raw, index) => typeof raw === 'number' ? numberValue(raw, `${path}.userGuides[${index}]`, issues, -100_000, 100_000) : { axis: enumValue(asRecord(raw).axis, `${path}.userGuides[${index}].axis`, issues, ['x', 'y'], 'x'), position: numberValue(asRecord(raw).position, `${path}.userGuides[${index}].position`, issues, -100_000, 100_000), label: optionalString(asRecord(raw).label, `${path}.userGuides[${index}].label`, issues, 512) }) : (issues.push({ path: `${path}.userGuides`, message: 'must be an array' }), []) }),
     width: numberValue(input.width, `${path}.width`, issues, 1, 100_000),
     height: numberValue(input.height, `${path}.height`, issues, 1, 100_000),
-    background: safeCssColor(input.background, `${path}.background`, issues, '#ffffff'),
+    background,
+    backgroundProvenance,
     elements,
     notes: stringValue(input.notes ?? '', `${path}.notes`, issues),
     breakpoints,

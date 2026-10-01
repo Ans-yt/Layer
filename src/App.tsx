@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, CSSProperties, KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
-import { Icon } from './components/Icon'
+import { Icon, type IconName } from './components/Icon'
 import { Canvas, type CanvasContextMenu, type CanvasSelectionRect } from './components/Canvas'
 import { Inspector } from './components/Inspector'
 import { LayersPanel } from './components/LayersPanel'
@@ -12,8 +12,9 @@ import { CornerEditor } from './components/CornerEditor'
 import { TooltipLayer } from './components/TooltipLayer'
 import { ThemeChooser } from './components/ThemePicker'
 import { SelectField } from './components/SelectField'
+import PreviewExperience from './components/PreviewExperience'
 import type { DesignElement, ElementType, Page, Project, ViewState } from './lib/model'
-import { cloneElement, createInitialProject, deepCloneProject, exportableProject, getActivePage, makeElement, uid } from './lib/model'
+import { applyThemeToProject, cloneElement, createInitialProject, createPage, deepCloneProject, exportableProject, getActivePage, makeElement, resetPageBackground, setPageBackground, uid } from './lib/model'
 import { applyOperations, requestAiStream, type AiScope } from './lib/ai'
 import { exportProjectPackage, listSavedProjects, loadProject, loadSavedProject, projectBuilderPrompt, readFileAsDataUrl, readLayerFile, saveProject, type SavedProjectSummary } from './lib/storage'
 import { artifactToDataUrl, captureCanvas } from './lib/capture'
@@ -22,11 +23,21 @@ import { getAbsoluteRect, isDescendant } from './lib/geometry'
 import { computeLayout } from './lib/layout'
 import { isThemeId, type ThemeId } from './lib/themes'
 import { APP_ICON_URL } from './lib/brand'
+import { SafeImage } from './components/SafeImage'
 
 export type Tool = 'select' | 'hand' | 'cut' | ElementType
 
 const defaultView: ViewState = { zoom: 0.74, panX: 100, panY: 80, viewportWidth: 1096, mode: 'design', panel: 'inspector' }
 const THEME_STORAGE_KEY = 'layer.theme.v1'
+
+const readStoredTheme = (): ThemeId => {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY)
+    return isThemeId(stored) ? stored : 'black'
+  } catch {
+    return 'black'
+  }
+}
 
 const readImageDimensions = (src: string): Promise<{ width: number; height: number }> => new Promise((resolve, reject) => {
   const image = new Image()
@@ -36,7 +47,7 @@ const readImageDimensions = (src: string): Promise<{ width: number; height: numb
 })
 
 export default function App() {
-  const [project, setProject] = useState<Project>(() => loadProject())
+  const [project, setProject] = useState<Project>(() => applyThemeToProject(loadProject(), readStoredTheme()))
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [view, setView] = useState<ViewState>(defaultView)
   const [activeTool, setActiveTool] = useState<Tool>('select')
@@ -61,12 +72,13 @@ export default function App() {
   const [savedProjects, setSavedProjects] = useState<SavedProjectSummary[]>([])
   const [projectsOpen, setProjectsOpen] = useState(false)
   const [previewState, setPreviewState] = useState<Record<string, boolean>>({})
+  const [previewOpen, setPreviewOpen] = useState(false)
   const [tutorialStep, setTutorialStep] = useState(0)
   const [sidebarSizes, setSidebarSizes] = useState({ pages: 234, inspector: 322 })
-  const [sidebarOpen, setSidebarOpen] = useState({ pages: true, inspector: true })
+  const [sidebarOpen, setSidebarOpen] = useState(() => ({ pages: typeof window === 'undefined' || window.innerWidth > 650, inspector: typeof window === 'undefined' || window.innerWidth > 900 }))
   const [cornerEditorOpen, setCornerEditorOpen] = useState(false)
   const [cutEditorOpen, setCutEditorOpen] = useState(false)
-  const [theme, setThemeState] = useState<ThemeId>(() => { const stored = localStorage.getItem(THEME_STORAGE_KEY); return isThemeId(stored) ? stored : 'black' })
+  const [theme, setThemeState] = useState<ThemeId>(readStoredTheme)
   const [themeChooserOpen, setThemeChooserOpen] = useState(() => !new URLSearchParams(window.location.search).has('skipTour') && localStorage.getItem('layer.tutorial.dismissed') === 'true' && !localStorage.getItem(THEME_STORAGE_KEY))
   const themePendingRef = useRef(!new URLSearchParams(window.location.search).has('skipTour') && !localStorage.getItem(THEME_STORAGE_KEY))
   const beforeTransformRef = useRef<Project | null>(null)
@@ -156,12 +168,23 @@ export default function App() {
     setSidebarSizes((current) => ({ ...current, [target]: target === 'pages' ? 234 : 322 }))
   }
 
+  const openPanel = useCallback((panel: ViewState['panel']) => {
+    setSidebarOpen((current) => ({ ...current, inspector: true }))
+    setView((current) => ({ ...current, panel }))
+  }, [])
+
   const notify = useCallback((message: string) => {
     setToast(message)
     window.setTimeout(() => setToast((current) => current === message ? null : current), 2600)
   }, [])
 
-  const setTheme = useCallback((next: ThemeId) => { setThemeState(next); localStorage.setItem(THEME_STORAGE_KEY, next) }, [])
+  const openPreview = useCallback(() => {
+    setPreviewState({})
+    setPreviewOpen(true)
+  }, [])
+
+  const closePreview = useCallback(() => setPreviewOpen(false), [])
+
   const closeTutorial = useCallback(() => { setTutorialOpen(false); localStorage.setItem('layer.tutorial.dismissed', 'true'); if (themePendingRef.current) setThemeChooserOpen(true) }, [])
 
   useEffect(() => { document.documentElement.dataset.theme = theme; return () => { delete document.documentElement.dataset.theme } }, [theme])
@@ -189,6 +212,13 @@ export default function App() {
     setLastAction(label)
   }, [project])
 
+  const setTheme = useCallback((next: ThemeId) => {
+    try { localStorage.setItem(THEME_STORAGE_KEY, next) } catch { /* local storage is optional */ }
+    if (next === theme) return
+    commit((draft) => { draft.pages = applyThemeToProject(draft, next).pages }, `Changed workspace theme to ${next}`)
+    setThemeState(next)
+  }, [commit, theme])
+
   const updatePageElement = useCallback((id: string, patch: Partial<DesignElement>, label = 'Updated layer') => {
     updateProject((draft) => {
       const target = draft.pages.find((candidate) => candidate.id === draft.activePageId)
@@ -200,9 +230,20 @@ export default function App() {
   const updatePage = useCallback((patch: Partial<Page>, label = 'Updated page') => {
     updateProject((draft) => {
       const target = draft.pages.find((candidate) => candidate.id === draft.activePageId)
-      if (target) Object.assign(target, patch)
+      if (!target) return
+      const { background, backgroundProvenance, ...pagePatch } = patch
+      Object.assign(target, pagePatch)
+      if (typeof background === 'string') Object.assign(target, setPageBackground(target, background))
+      else if (backgroundProvenance) target.backgroundProvenance = backgroundProvenance
     }, label)
   }, [updateProject])
+
+  const resetCanvasBackground = useCallback(() => {
+    commit((draft) => {
+      const target = draft.pages.find((candidate) => candidate.id === draft.activePageId)
+      if (target) Object.assign(target, resetPageBackground(target, theme))
+    }, 'Reset canvas background')
+  }, [commit, theme])
 
   const commitPageElement = useCallback((id: string, patch: Partial<DesignElement>, label = 'Updated layer') => {
     commit((draft) => {
@@ -218,6 +259,7 @@ export default function App() {
       if (toggle || additive) return current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
       return [id]
     })
+    setSidebarOpen((current) => ({ ...current, inspector: true }))
     setView((current) => ({ ...current, panel: 'inspector' }))
   }, [])
 
@@ -392,11 +434,10 @@ export default function App() {
   }, [])
 
   const addPage = useCallback(() => {
-    const next = { id: uid('page'), name: `Page ${project.pages.length + 1}`, width: 960, height: 760, background: '#0b0c0e', elements: [], notes: '', breakpoints: [{ id: uid('bp'), name: 'Desktop', width: 960 }, { id: uid('bp'), name: 'Phone', width: 390 }] }
-    commit((draft) => draft.pages.push(next), 'Created page')
-    setProject((current) => ({ ...current, activePageId: next.id }))
+    const next = createPage({ theme, name: `Page ${project.pages.length + 1}`, width: 960, height: 760 })
+    commit((draft) => { draft.pages.push(next); draft.activePageId = next.id }, 'Created page')
     setSelectedIds([])
-  }, [commit, project.pages.length])
+  }, [commit, project.pages.length, theme])
 
   const duplicatePage = useCallback(() => {
     const source = deepCloneProject(project).pages.find((candidate) => candidate.id === project.activePageId)
@@ -423,7 +464,7 @@ export default function App() {
     setSelectedIds([])
   }, [commit, notify, project.pages])
 
-  const setActivePage = useCallback((pageId: string) => { setProject((current) => ({ ...current, activePageId: pageId })); setSelectedIds([]); setView((current) => ({ ...current, panel: 'inspector' })); setShowPageMenu(false) }, [])
+  const setActivePage = useCallback((pageId: string) => { setProject((current) => ({ ...current, activePageId: pageId })); setSelectedIds([]); setSidebarOpen((current) => ({ ...current, inspector: true })); setView((current) => ({ ...current, panel: 'inspector' })); setShowPageMenu(false) }, [])
 
   const handleCanvasSelection = useCallback((rect: CanvasSelectionRect | null, additive = false) => {
     if (!rect) { setSelectionRect(null); return }
@@ -442,7 +483,7 @@ export default function App() {
 
   const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]; if (!file) return
-    try { const imported = await readLayerFile(file); setHistory((items) => [...items, deepCloneProject(project)].slice(-80)); setFuture([]); setProject(imported); setSelectedIds([]); setSaveState('recovered'); notify('Layer project imported.') } catch (error) { notify(error instanceof Error ? error.message : 'Could not import this project.') }
+    try { const imported = applyThemeToProject(await readLayerFile(file), theme); setHistory((items) => [...items, deepCloneProject(project)].slice(-80)); setFuture([]); setProject(imported); setSelectedIds([]); setSaveState('recovered'); notify('Layer project imported.') } catch (error) { notify(error instanceof Error ? error.message : 'Could not import this project.') }
     event.target.value = ''
   }
 
@@ -510,7 +551,7 @@ export default function App() {
     if (modifier && event.key.toLowerCase() === 'v') { event.preventDefault(); void paste(); return }
     if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); deleteSelected(); return }
     if (event.key === 'Escape') { if (cornerEditorOpen) { setCornerEditorOpen(false); setActiveTool('select'); return } if (cutEditorOpen) { setCutEditorOpen(false); setActiveTool('select'); return } setSelectedIds([]); setContextMenu(null); setSelectionRect(null); return }
-    if (event.key === 'Enter' && modifier && selected.length === 1) { setView((current) => ({ ...current, panel: 'ai' })); return }
+    if (event.key === 'Enter' && modifier && selected.length === 1) { openPanel('ai'); return }
     if (!modifier) {
       const shortcut = event.key.toLowerCase()
       if (shortcut === 't') { event.preventDefault(); createElement('text'); return }
@@ -534,7 +575,7 @@ export default function App() {
     })
   }, [notify, setActivePage])
 
-  const askLayer = useCallback((ids: string[]) => { setSelectedIds(ids); setAiScope('selection'); setView((current) => ({ ...current, panel: 'ai' })); setContextMenu(null) }, [])
+  const askLayer = useCallback((ids: string[]) => { setSelectedIds(ids); setAiScope('selection'); openPanel('ai'); setContextMenu(null) }, [openPanel])
 
   const createComponent = useCallback(() => {
     if (!selected.length) return notify('Select a layer first.')
@@ -559,6 +600,7 @@ export default function App() {
     if (!elements.length) return
     commit((draft) => draft.pages.find((candidate) => candidate.id === draft.activePageId)?.elements.push(...elements), `Inserted ${elements.length} layer${elements.length === 1 ? '' : 's'}`)
     setSelectedIds(elements.map((element) => element.id))
+    setSidebarOpen((current) => ({ ...current, inspector: true }))
     setView((current) => ({ ...current, panel: 'inspector' }))
   }, [commit])
 
@@ -591,7 +633,7 @@ export default function App() {
     const focus = aiScope === 'selection' && selected.length ? selected : aiScope === 'page' ? page.elements : project.pages.flatMap((candidate) => candidate.elements)
     if (normalized.startsWith('/audit') || normalized.includes('check spacing') || normalized.includes('accessibility')) {
       const issues = page.elements.filter((element) => element.type === 'image' && !element.alt).length + page.elements.filter((element) => ['button', 'input'].includes(element.type) && (element.width < 44 || element.height < 44)).length
-      return { label: 'Run review checks', apply: () => { setView((current) => ({ ...current, panel: 'review' })); notify(issues ? `${issues} review finding${issues === 1 ? '' : 's'} found.` : 'No obvious review findings on this page.') } }
+       return { label: 'Run review checks', apply: () => { openPanel('review'); notify(issues ? `${issues} review finding${issues === 1 ? '' : 's'} found.` : 'No obvious review findings on this page.') } }
     }
     if (normalized.includes('button')) return { label: 'Add a button', apply: () => { createElement('button'); notify('Button added to the current page.') } }
     if (normalized.includes('stack') || normalized.includes('column')) return { label: 'Make a vertical stack', apply: () => { if (!focus.length) return; commit((draft) => draft.pages.forEach((candidate) => candidate.elements.forEach((element) => { if (focus.some((item) => item.id === element.id)) element.layout = { ...(element.layout ?? makeElement('group').layout!), mode: 'column', gap: 16, padding: 24, align: 'stretch', justify: 'start', wrap: false, widthRule: 'fill', heightRule: 'fit', overflow: 'visible' } })), 'Prepared responsive stack'); notify('Responsive stack rules applied to the scoped layers.') } }
@@ -599,7 +641,7 @@ export default function App() {
     if (normalized.includes('bigger') || normalized.includes('larger')) return { label: 'Increase selected size', apply: () => { commit((draft) => draft.pages.forEach((candidate) => candidate.elements.forEach((element) => { if (selectedIds.includes(element.id) && !element.locked) { element.width *= 1.1; element.height *= 1.1; if (element.fontSize) element.fontSize = Math.round(element.fontSize * 1.1) } })), 'Increased selected size'); notify('Selected layers increased by 10%.') } }
     if (normalized.includes('rename')) return { label: 'Name selected layers', apply: () => { commit((draft) => draft.pages.forEach((candidate) => candidate.elements.forEach((element) => { if (selectedIds.includes(element.id)) element.name = element.text?.split('\n')[0]?.slice(0, 36) || element.name })), 'Renamed selected layers'); notify('Selected layers renamed from their visible text.') } }
     return { label: 'Add a note to the scope', apply: () => { commit((draft) => { const target = draft.pages.find((candidate) => candidate.id === draft.activePageId); if (aiScope === 'page' && target) target.notes = `${target.notes ? `${target.notes}\n` : ''}Layer AI note: ${prompt}`; target?.elements.forEach((element) => { if (selectedIds.includes(element.id)) element.notes = `${element.notes ? `${element.notes}\n` : ''}Layer AI note: ${prompt}` }) }, 'Added implementation note'); notify('Note added to the scoped document.') } }
-  }, [aiScope, alignSelected, commit, createElement, notify, page.elements, project.pages, selected, selectedIds])
+   }, [aiScope, alignSelected, commit, createElement, notify, openPanel, page.elements, project.pages, selected, selectedIds])
 
   const applyAiOperations = useCallback((operations: unknown[], scope: AiScope, responseText: string) => {
     const proposal = {
@@ -692,7 +734,7 @@ export default function App() {
   }, [project.name, updateProject])
 
   const newProject = useCallback(() => {
-    const next = createInitialProject()
+    const next = createInitialProject(theme)
     next.id = uid('project')
     next.name = 'Untitled project'
     setHistory((items) => [...items, deepCloneProject(project)].slice(-80))
@@ -702,7 +744,7 @@ export default function App() {
     setView(defaultView)
     setProjectsOpen(false)
     notify('New local project created.')
-  }, [notify, project])
+  }, [notify, project, theme])
 
   const openSavedProject = useCallback(async (id: string) => {
     try {
@@ -710,12 +752,12 @@ export default function App() {
       if (!loaded) throw new Error('Saved project could not be opened.')
       setHistory((items) => [...items, deepCloneProject(project)].slice(-80))
       setFuture([])
-      setProject(loaded)
+      setProject(applyThemeToProject(loaded, theme))
       setSelectedIds([])
       setProjectsOpen(false)
       notify(`Opened ${loaded.name}.`)
     } catch (error) { notify(error instanceof Error ? error.message : 'Could not open saved project.') }
-  }, [notify, project])
+  }, [notify, project, theme])
 
   const exportPackage = useCallback(async () => {
     try {
@@ -749,55 +791,70 @@ export default function App() {
   const handlePreviewImport = (event: ChangeEvent<HTMLInputElement>) => { void handleImport(event) }
 
   return <div ref={appRootRef} className="layer-app" data-theme={theme} onKeyDown={onKeyDown} onPointerDownCapture={(event) => { const target = event.target as HTMLElement; if (target.closest('input,textarea,select,button,[contenteditable="true"]')) return; if (target.closest('.canvas-viewport, .canvas-zone, .left-rail, .pages-sidebar')) event.currentTarget.focus({ preventScroll: true }) }} tabIndex={0} onContextMenu={(event) => event.preventDefault()}>
-     <TopBar project={project} page={page} view={view} saveState={saveState} selectedCount={selected.length} onUndo={undo} onRedo={redo} canUndo={history.length > 0} canRedo={future.length > 0} onFit={fitPage} onActualSize={actualSize} onExport={() => void exportPackage()} onImport={() => layerInputRef.current?.click()} onPreview={() => setView((current) => ({ ...current, mode: current.mode === 'design' ? 'preview' : 'design' }))} onTutorial={() => { setTutorialStep(0); setTutorialOpen(true) }} onShortcuts={() => setShowShortcuts(true)} onRenameProject={renameProject} savedProjects={savedProjects} projectsOpen={projectsOpen} onToggleProjects={() => setProjectsOpen((value) => !value)} onNewProject={newProject} onOpenProject={openSavedProject} />
-    <input ref={layerInputRef} className="visually-hidden" type="file" accept=".json,.layer.json,application/json" onChange={handlePreviewImport} />
-    <input ref={aiReferenceInputRef} className="visually-hidden" type="file" accept="image/*,video/*" onChange={(event) => void handleAiReference(event)} />
-    <div ref={editorShellRef} className="editor-shell" style={{ '--pages-width': `${sidebarOpen.pages ? sidebarSizes.pages : 0}px`, '--inspector-width': `${sidebarOpen.inspector ? sidebarSizes.inspector : 0}px` } as CSSProperties}>
-      <aside className="left-rail" aria-label="Project navigation">
-         <div className="brand-mark" aria-label="Layer"><img src={APP_ICON_URL} alt="" /></div>
-        <div className="rail-tools">
-          <ToolButton icon="cursor" label="Select (V)" active={activeTool === 'select'} onClick={() => setActiveTool('select')} />
-          <ToolButton icon="hand" label="Pan (H)" active={activeTool === 'hand'} onClick={() => setActiveTool('hand')} />
-          <div className="rail-rule" />
-           <ToolButton icon="frame" label="Canvas (F)" active={activeTool === 'frame'} onClick={() => { setActiveTool('frame'); createElement('frame') }} />
-           <ToolButton icon="text" label="Text (T)" active={activeTool === 'text'} onClick={() => { setActiveTool('text'); createElement('text') }} />
-            <ToolButton icon="scissors" label="Cut corners (Ctrl/Cmd C)" active={activeTool === 'cut'} onClick={() => openCutEditor()} />
-           <ToolButton icon="shape" label="Shape (R)" active={activeTool === 'rect'} onClick={() => { setActiveTool('rect'); createElement('rect') }} />
-          <ToolButton icon="image" label="Image" active={activeTool === 'image'} onClick={() => fileInputRef.current?.click()} />
-          <ToolButton icon="icon" label="Icon" active={activeTool === 'icon'} onClick={() => { setView((current) => ({ ...current, panel: 'assets' })); setActiveTool('icon') }} />
-          <ToolButton icon="section" label="Section" active={activeTool === 'section'} onClick={() => { setActiveTool('section'); createElement('section') }} />
-        </div>
-        <div className="rail-bottom">
-          <ToolButton icon="spark" label="Ask Layer" active={view.panel === 'ai'} onClick={() => setView((current) => ({ ...current, panel: 'ai' }))} />
-          <ToolButton icon="plug" label="Connections" active={view.panel === 'connections'} onClick={() => setView((current) => ({ ...current, panel: 'connections' }))} />
-          <ToolButton icon="settings" label="Review & settings" active={view.panel === 'review'} onClick={() => setView((current) => ({ ...current, panel: 'review' }))} />
+      <TopBar project={project} page={page} view={view} saveState={saveState} selectedCount={selected.length} onUndo={undo} onRedo={redo} canUndo={history.length > 0} canRedo={future.length > 0} onFit={fitPage} onActualSize={actualSize} onExport={() => void exportPackage()} onImport={() => layerInputRef.current?.click()} onPreview={openPreview} onTutorial={() => { setTutorialStep(0); setTutorialOpen(true) }} onShortcuts={() => setShowShortcuts(true)} onRenameProject={renameProject} savedProjects={savedProjects} projectsOpen={projectsOpen} onToggleProjects={() => setProjectsOpen((value) => !value)} onNewProject={newProject} onOpenProject={openSavedProject} />
+     <input ref={layerInputRef} className="visually-hidden" type="file" accept=".json,.layer.json,application/json" onChange={handlePreviewImport} />
+     <input ref={aiReferenceInputRef} className="visually-hidden" type="file" accept="image/*,video/*" onChange={(event) => void handleAiReference(event)} />
+     <div ref={editorShellRef} className="editor-shell" style={{ '--pages-width': `${sidebarOpen.pages ? sidebarSizes.pages : 0}px`, '--inspector-width': `${sidebarOpen.inspector ? sidebarSizes.inspector : 0}px` } as CSSProperties}>
+       <div className="canvas-toolbar editor-canvas-toolbar" aria-label="Canvas controls">
+         <div className="canvas-tool-group canvas-toolbar-left">
+           <button type="button" className={`tool-chip ${view.mode === 'design' ? 'active' : ''}`} aria-pressed={view.mode === 'design'}><Icon name={view.mode === 'preview' ? 'play' : 'cursor'} size={14} /><span className="tool-chip-label">{view.mode === 'preview' ? 'Preview' : 'Design'}</span></button>
+            <button type="button" className="tool-chip" onClick={() => openPanel('assets')}><Icon name="plus" size={14} /><span className="tool-chip-label">Insert</span></button>
+         </div>
+         <label className="viewport-picker canvas-toolbar-center"><Icon name="monitor" size={13} /><SelectField value={[1096, 768, 390, 1440].includes(view.viewportWidth) ? String(view.viewportWidth) : 'custom'} options={[['1096', 'Desktop · 1096'], ['768', 'Tablet · 768'], ['390', 'Phone · 390'], ['1440', 'Wide · 1440'], ['custom', 'Custom width…']].map(([value, label]) => ({ value, label }))} ariaLabel="Responsive preview width" onChange={(raw) => { const value = raw === 'custom' ? Number(window.prompt('Preview width in pixels', String(view.viewportWidth)) ?? view.viewportWidth) : Number(raw); if (Number.isFinite(value) && value >= 240 && value <= 4000) { setView((current) => ({ ...current, viewportWidth: Math.round(value) })); window.setTimeout(fitPage, 0) } }} /></label>
+         <div className="canvas-tool-group canvas-toolbar-right">
+           <button type="button" className="tool-chip" aria-label="Zoom out" data-tooltip="Zoom out" disabled={view.zoom <= 0.25} onClick={() => setView((current) => ({ ...current, zoom: Math.max(0.25, current.zoom - 0.1) }))}><Icon name="minus" size={14} /></button><span className="zoom-readout" aria-label={`Zoom ${Math.round(view.zoom * 100)} percent`}>{Math.round(view.zoom * 100)}%</span><button type="button" className="tool-chip" aria-label="Zoom in" data-tooltip="Zoom in" disabled={view.zoom >= 2.4} onClick={() => setView((current) => ({ ...current, zoom: Math.min(2.4, current.zoom + 0.1) }))}><Icon name="plus" size={14} /></button><button type="button" className="tool-chip" onClick={fitPage} data-tooltip="Fit page to canvas"><Icon name="fit" size={14} /><span className="tool-chip-label">Fit</span></button><button type="button" className="tool-chip tool-chip-actual" onClick={actualSize} data-tooltip="View at actual size"><Icon name="maximize" size={14} /><span className="tool-chip-label">100%</span></button>
+         </div>
+       </div>
+       <aside className="left-rail" aria-label="Project navigation">
+           <div className="brand-mark" aria-label="Layer"><SafeImage src={APP_ICON_URL} alt="" fallbackKind="brand" /></div>
+         <div className="rail-tools">
+           <ToolButton icon="layers" label={sidebarOpen.pages ? 'Hide pages and layers' : 'Show pages and layers'} active={sidebarOpen.pages} onClick={() => sidebarOpen.pages ? setSidebarOpen((current) => ({ ...current, pages: false })) : resetSidebar('pages')} />
+           <ToolButton icon="sliders" label={sidebarOpen.inspector ? 'Hide inspector' : 'Show inspector'} active={sidebarOpen.inspector} onClick={() => sidebarOpen.inspector ? setSidebarOpen((current) => ({ ...current, inspector: false })) : resetSidebar('inspector')} />
+         </div>
+         <div className="rail-bottom">
+           <ToolButton icon="spark" label="Ask Layer" active={view.panel === 'ai'} onClick={() => openPanel('ai')} />
+           <ToolButton icon="plug" label="Connections" active={view.panel === 'connections'} onClick={() => openPanel('connections')} />
+           <ToolButton icon="settings" label="Review & settings" active={view.panel === 'review'} onClick={() => openPanel('review')} />
         </div>
       </aside>
 
       <aside className={`pages-sidebar ${sidebarOpen.pages ? '' : 'is-collapsed'}`}>
         <div className="sidebar-heading"><span>Pages</span><div className="inline-actions"><button className="icon-button" onClick={addPage} aria-label="Add page"><Icon name="plus" /></button><button className="icon-button" onClick={() => setShowPageMenu((value) => !value)} aria-label="Page menu"><Icon name="more" /></button></div></div>
         {showPageMenu && <div className="page-menu popover"><button onClick={addPage}><Icon name="plus" /> New page</button><button onClick={duplicatePage}><Icon name="copy" /> Duplicate page</button><button onClick={() => renamePage(project.activePageId)}><Icon name="type" /> Rename page</button><button onClick={() => deletePage(project.activePageId)}><Icon name="trash" /> Delete page</button></div>}
-        <div className="page-list">{project.pages.map((candidate, index) => <div key={candidate.id} className={`page-row ${candidate.id === project.activePageId ? 'active' : ''}`}><button className="page-button" onClick={() => setActivePage(candidate.id)}><span className="page-thumb" style={{ background: candidate.background }}><span /></span><span className="page-name">{candidate.name}</span></button><div className="row-actions"><button className="icon-button tiny" onClick={() => renamePage(candidate.id)} aria-label={`Rename ${candidate.name}`}><Icon name="more" size={14} /></button>{index === project.pages.length - 1 && <button className="icon-button tiny" onClick={() => deletePage(candidate.id)} aria-label={`Delete ${candidate.name}`}><Icon name="trash" size={13} /></button>}</div></div>)}</div>
+         <div className="page-list">{project.pages.map((candidate, index) => <div key={candidate.id} className={`page-row ${candidate.id === project.activePageId ? 'active' : ''}`}><button className="page-button" onClick={() => setActivePage(candidate.id)}><span className="page-icon" aria-hidden="true"><Icon name="page" size={16} /></span><span className="page-name">{candidate.name}</span>{candidate.id === project.activePageId && candidate.name.toLowerCase() === 'home' && <Icon name="home" size={13} className="page-current-mark" />}</button><div className="row-actions"><button className="icon-button tiny" onClick={() => renamePage(candidate.id)} aria-label={`Rename ${candidate.name}`}><Icon name="more" size={14} /></button>{index === project.pages.length - 1 && <button className="icon-button tiny" onClick={() => deletePage(candidate.id)} aria-label={`Delete ${candidate.name}`}><Icon name="trash" size={13} /></button>}</div></div>)}</div>
         <div className="sidebar-divider" />
          <LayersPanel key={page.id} page={page} selectedIds={selectedIds} onSelect={select} onToggleVisible={(id) => toggleLayerFlag(id, 'visible')} onToggleLocked={(id) => toggleLayerFlag(id, 'locked')} onRename={(id, name) => commitPageElement(id, { name }, 'Renamed layer')} onGroup={groupSelected} onMoveLayer={moveLayer} />
-        <div className="sidebar-footer"><button className="subtle-button" onClick={() => setView((current) => ({ ...current, panel: 'assets' }))}><Icon name="layers" /> Assets & components</button><button className="subtle-button" onClick={() => setView((current) => ({ ...current, panel: 'review' }))}><Icon name="check-circle" /> Review page</button></div>
+         <div className="sidebar-footer"><button className="subtle-button" onClick={() => openPanel('assets')}><Icon name="layers" /> Assets & components</button><button className="subtle-button" onClick={openPreview}><Icon name="play" /> Preview site</button></div>
       </aside>
 
-      <main className="canvas-zone" ref={canvasHostRef}>
-        <div className="canvas-toolbar" aria-label="Canvas controls">
-           <div className="canvas-tool-group"><button className="tool-chip active"><Icon name={view.mode === 'preview' ? 'play' : 'cursor'} size={14} /> {view.mode === 'preview' ? 'Preview' : 'Design'}</button><button className="tool-chip" onClick={() => setView((current) => ({ ...current, panel: 'assets' }))}><Icon name="plus" size={14} /> Insert</button><label className="viewport-picker"><Icon name="frame" size={13} /><SelectField value={[1096, 768, 390, 1440].includes(view.viewportWidth) ? String(view.viewportWidth) : 'custom'} options={[['1096', 'Desktop · 1096'], ['768', 'Tablet · 768'], ['390', 'Phone · 390'], ['1440', 'Wide · 1440'], ['custom', 'Custom width…']].map(([value, label]) => ({ value, label }))} ariaLabel="Responsive preview width" onChange={(raw) => { const value = raw === 'custom' ? Number(window.prompt('Preview width in pixels', String(view.viewportWidth)) ?? view.viewportWidth) : Number(raw); if (Number.isFinite(value) && value >= 240 && value <= 4000) { setView((current) => ({ ...current, viewportWidth: Math.round(value) })); window.setTimeout(fitPage, 0) } }} /></label></div>
-          <div className="canvas-tool-group"><button className="tool-chip" aria-label="Zoom out" data-tooltip="Zoom out" disabled={view.zoom <= 0.25} onClick={() => setView((current) => ({ ...current, zoom: Math.max(0.25, current.zoom - 0.1) }))}><Icon name="minus" size={14} /></button><span className="zoom-readout" aria-label={`Zoom ${Math.round(view.zoom * 100)} percent`}>{Math.round(view.zoom * 100)}%</span><button className="tool-chip" aria-label="Zoom in" data-tooltip="Zoom in" disabled={view.zoom >= 2.4} onClick={() => setView((current) => ({ ...current, zoom: Math.min(2.4, current.zoom + 0.1) }))}><Icon name="plus" size={14} /></button><button className="tool-chip" onClick={fitPage} data-tooltip="Fit page to canvas"><Icon name="fit" size={14} /> Fit</button><button className="tool-chip" onClick={actualSize} data-tooltip="View at actual size"><Icon name="maximize" size={14} /> 100%</button></div>
-        </div>
+       <main className="canvas-zone" ref={canvasHostRef}>
+         <div className="floating-tool-dock" aria-label="Drawing tools">
+           <button type="button" className={`tool-dock-button ${activeTool === 'select' ? 'active' : ''}`} aria-label="Select (V)" aria-pressed={activeTool === 'select'} data-tooltip="Select (V)" onClick={() => setActiveTool('select')}><Icon name="cursor" size={17} /></button>
+           <button type="button" className={`tool-dock-button ${activeTool === 'hand' ? 'active' : ''}`} aria-label="Pan (H)" aria-pressed={activeTool === 'hand'} data-tooltip="Pan (H)" onClick={() => setActiveTool('hand')}><Icon name="hand" size={17} /></button>
+           <span className="tool-dock-divider" aria-hidden="true" />
+           <button type="button" className={`tool-dock-button ${activeTool === 'frame' ? 'active' : ''}`} aria-label="Canvas (F)" aria-pressed={activeTool === 'frame'} data-tooltip="Canvas (F)" onClick={() => { setActiveTool('frame'); createElement('frame') }}><Icon name="frame" size={17} /></button>
+           <button type="button" className={`tool-dock-button ${activeTool === 'text' ? 'active' : ''}`} aria-label="Text (T)" aria-pressed={activeTool === 'text'} data-tooltip="Text (T)" onClick={() => { setActiveTool('text'); createElement('text') }}><Icon name="text" size={17} /></button>
+           <button type="button" className={`tool-dock-button ${activeTool === 'rect' ? 'active' : ''}`} aria-label="Shape (R)" aria-pressed={activeTool === 'rect'} data-tooltip="Shape (R)" onClick={() => { setActiveTool('rect'); createElement('rect') }}><Icon name="shape" size={17} /></button>
+           <button type="button" className={`tool-dock-button ${activeTool === 'image' ? 'active' : ''}`} aria-label="Image" aria-pressed={activeTool === 'image'} data-tooltip="Image" onClick={() => { setActiveTool('image'); fileInputRef.current?.click() }}><Icon name="image" size={17} /></button>
+           <details className="tool-dock-overflow">
+             <summary className="tool-dock-button" aria-label="More drawing tools" data-tooltip="More drawing tools"><Icon name="more" size={17} /></summary>
+             <div className="tool-dock-menu" role="menu" aria-label="More drawing tools">
+               <button type="button" role="menuitem" aria-label="Cut corners (Ctrl/Cmd C)" onClick={(event) => { openCutEditor(); event.currentTarget.closest('details')?.removeAttribute('open') }}><Icon name="scissors" size={15} /><span>Cut corners</span></button>
+                <button type="button" role="menuitem" aria-label="Icon" onClick={(event) => { openPanel('assets'); setActiveTool('icon'); event.currentTarget.closest('details')?.removeAttribute('open') }}><Icon name="icon" size={15} /><span>Icon</span></button>
+               <button type="button" role="menuitem" aria-label="Section" onClick={(event) => { setActiveTool('section'); createElement('section'); event.currentTarget.closest('details')?.removeAttribute('open') }}><Icon name="section" size={15} /><span>Section</span></button>
+             </div>
+           </details>
+         </div>
          <Canvas page={page} project={project} view={view} selectedIds={selectedIds} activeTool={activeTool} previewState={previewState} settings={project.settings} selectionRect={selectionRect} onSelect={select} onClearSelection={clearSelection} onSelectionRect={handleCanvasSelection} onSetSelectionRect={setSelectionRect} onContextMenu={handleContextMenu} onTransformStart={startTransform} onTransform={(id, patch) => updatePageElement(id, patch, 'Editing layer')} onTransformEnd={endTransform} onPreviewAction={runPreviewAction} onPreviewNavigate={setActivePage} onPan={(panX, panY) => setView((current) => ({ ...current, panX, panY }))} onZoom={(zoom) => setView((current) => ({ ...current, zoom }))} onCut={openCutEditor} />
-        <div className="canvas-statusbar"><span>{lastAction}</span><span className="status-separator" /> <span>{page.name} · {page.width} × {page.height}</span><span className="status-separator" /><span className={saveState === 'saving' ? 'status-saving' : ''}>{saveState === 'saving' ? 'Saving…' : saveState === 'recovered' ? 'Recovered' : 'Saved locally'}</span><div className="canvas-status-actions"><button className="status-button" onClick={() => commit((draft) => draft.versions.push({ id: uid('snapshot'), name: `Snapshot ${draft.versions.length + 1}`, createdAt: new Date().toISOString(), project: exportableProject(draft) }), 'Created snapshot')}><Icon name="download-cloud" size={13} /> Snapshot</button><button className="status-button" onClick={() => setView((current) => ({ ...current, panel: 'review' }))}><Icon name="check-circle" size={13} /> Checks</button></div></div>
+         <div className="canvas-statusbar"><span>{lastAction}</span><span className="status-separator" /> <span>{page.name} · {page.width} × {page.height}</span><span className="status-separator" /><span className={saveState === 'saving' ? 'status-saving' : ''}>{saveState === 'saving' ? 'Saving…' : saveState === 'recovered' ? 'Recovered' : 'Saved locally'}</span><div className="canvas-status-actions"><button className="status-button" onClick={() => commit((draft) => draft.versions.push({ id: uid('snapshot'), name: `Snapshot ${draft.versions.length + 1}`, createdAt: new Date().toISOString(), project: exportableProject(draft) }), 'Created snapshot')}><Icon name="download-cloud" size={13} /> Snapshot</button><button className="status-button" onClick={() => openPanel('review')}><Icon name="check-circle" size={13} /> Checks</button><button className="status-button" onClick={openPreview}><Icon name="play" size={13} /> Preview</button></div></div>
       </main>
 
       <aside className={`right-panel panel-${view.panel} ${sidebarOpen.inspector ? '' : 'is-collapsed'}`} aria-label="Properties and assistant">
           {view.panel === 'inspector' && <Inspector page={page} selected={selected} activeObject={activeObject} project={project} onUpdate={updatePageElement} onCommit={commitPageElement} onDelete={deleteSelected} onDuplicate={duplicateSelected} onGroup={groupSelected} onUngroup={ungroupSelected} onLock={toggleLocked} onVisible={toggleVisible} onReorder={reorder} onAlign={alignSelected} onAskLayer={askLayer} onCut={openCutEditor} onCreateComponent={createComponent} onUpdateComponent={updateComponent} onSetPanel={(panel) => setView((current) => ({ ...current, panel }))} onPageUpdate={updatePage} onTransformStart={startTransform} onTransformEnd={endTransform} />}
           {view.panel === 'assets' && <AssetsPanel project={project} onUpdate={updateProject} onCommit={commit} onInsertElement={(element) => insertElements([element])} onInsertElements={insertElements} onInsertComponent={insertComponent} onApplyStyle={applyStyle} onUpload={() => fileInputRef.current?.click()} onNotify={notify} />}
-          <AiPanel key={project.id} active={view.panel === 'ai'} project={project} page={page} selected={selected} scope={aiScope} messages={aiMessages} busy={aiBusy} proposal={aiProposal} attachmentCount={aiImageRefs.length} onScope={setAiScope} onSend={sendAi} onApply={() => { aiProposal?.apply(); setAiProposal(null); setAiMessages((messages) => [...messages, { id: uid('msg'), role: 'system', text: 'Applied as one undoable document change.' }]) }} onCancel={() => { setAiProposal(null); setAiMessages((messages) => [...messages, { id: uid('msg'), role: 'system', text: 'Proposal cancelled.' }]) }} onCancelRequest={cancelAiRequest} onCapture={() => void captureCanvasForAi()} onAttach={() => aiReferenceInputRef.current?.click()} onClearAttachments={() => setAiImageRefs([])} onSettings={() => setView((current) => ({ ...current, panel: 'connections' }))} />
-          {view.panel === 'connections' && <ConnectionsPanel project={project} onUpdate={updateProject} onCommit={commit} onNotify={notify} onBack={() => setView((current) => ({ ...current, panel: 'ai' }))} theme={theme} onTheme={setTheme} />}
-         {view.panel === 'review' && <ReviewPanel project={project} page={page} onUpdate={updateProject} onNotify={notify} onExport={() => void exportPackage()} onCopy={() => { void navigator.clipboard.writeText(projectBuilderPrompt(project)); notify('Builder prompt copied.') }} />}
+           <AiPanel key={project.id} active={view.panel === 'ai'} project={project} page={page} selected={selected} scope={aiScope} messages={aiMessages} busy={aiBusy} proposal={aiProposal} attachmentCount={aiImageRefs.length} onScope={setAiScope} onSend={sendAi} onApply={() => { aiProposal?.apply(); setAiProposal(null); setAiMessages((messages) => [...messages, { id: uid('msg'), role: 'system', text: 'Applied as one undoable document change.' }]) }} onCancel={() => { setAiProposal(null); setAiMessages((messages) => [...messages, { id: uid('msg'), role: 'system', text: 'Proposal cancelled.' }]) }} onCancelRequest={cancelAiRequest} onCapture={() => void captureCanvasForAi()} onAttach={() => aiReferenceInputRef.current?.click()} onClearAttachments={() => setAiImageRefs([])} onSettings={() => openPanel('connections')} />
+           {view.panel === 'connections' && <ConnectionsPanel project={project} onUpdate={updateProject} onCommit={commit} onNotify={notify} onBack={() => openPanel('ai')} theme={theme} onTheme={setTheme} />}
+          {view.panel === 'review' && <ReviewPanel project={project} page={page} onUpdate={updateProject} onNotify={notify} onExport={() => void exportPackage()} onCopy={() => { void navigator.clipboard.writeText(projectBuilderPrompt(project)); notify('Builder prompt copied.') }} onPreview={openPreview} />}
       </aside>
       <div className="sidebar-resize-handle pages-resize" role="separator" aria-orientation="vertical" aria-label="Resize or close pages sidebar" data-tooltip="Drag to resize or close. Double-click to reset." data-tooltip-side="right" onPointerDown={(event) => startSidebarResize('pages', event)} onDoubleClick={() => resetSidebar('pages')} />
       <div className="sidebar-resize-handle inspector-resize" role="separator" aria-orientation="vertical" aria-label="Resize or close inspector sidebar" data-tooltip="Drag to resize or close. Double-click to reset." data-tooltip-side="left" onPointerDown={(event) => startSidebarResize('inspector', event)} onDoubleClick={() => resetSidebar('inspector')} />
@@ -809,13 +866,14 @@ export default function App() {
     {toast && <div className="toast" role="status"><Icon name="check-circle" size={16} /> {toast}</div>}
     {showShortcuts && <Shortcuts onClose={() => setShowShortcuts(false)} />}
      {tutorialOpen && <Tutorial step={tutorialStep} setStep={setTutorialStep} onClose={closeTutorial} />}
-     {themeChooserOpen && <ThemeChooser value={theme} onChange={setTheme} canvasBackground={page.background} onCanvasBackground={(value) => updatePage({ background: value }, 'Changed canvas background')} onClose={() => { setThemeChooserOpen(false); themePendingRef.current = false }} />}
-    <input ref={fileInputRef} className="visually-hidden" type="file" accept="image/*" onChange={handleImageUpload} />
-    <TooltipLayer />
-  </div>
+      {themeChooserOpen && <ThemeChooser value={theme} onChange={setTheme} canvasBackground={page.background} canvasBackgroundProvenance={page.backgroundProvenance} onCanvasBackground={(value) => updatePage({ background: value }, 'Changed canvas background')} onResetCanvasBackground={resetCanvasBackground} onClose={() => { setThemeChooserOpen(false); themePendingRef.current = false }} />}
+     <input ref={fileInputRef} className="visually-hidden" type="file" accept="image/*" onChange={handleImageUpload} />
+     <TooltipLayer />
+     {previewOpen && <PreviewExperience project={project} page={page} viewportWidth={view.viewportWidth} previewState={previewState} reducedMotion={project.settings.reducedMotion} onExit={closePreview} onNavigate={setActivePage} />}
+   </div>
 }
 
-function ToolButton({ icon, label, active, onClick }: { icon: 'cursor' | 'hand' | 'frame' | 'text' | 'shape' | 'image' | 'icon' | 'section' | 'spark' | 'plug' | 'settings' | 'scissors'; label: string; active?: boolean; onClick: () => void }) {
+function ToolButton({ icon, label, active, onClick }: { icon: IconName; label: string; active?: boolean; onClick: () => void }) {
   return <button className={`rail-button ${active ? 'active' : ''}`} onClick={onClick} aria-label={label} data-tooltip={label}><Icon name={icon} size={17} /></button>
 }
 

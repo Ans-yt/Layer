@@ -15,7 +15,11 @@ import {
 } from '../lib/catalog'
 import { ColorPicker } from './ColorPicker'
 import { SelectField } from './SelectField'
+import { SafeImage } from './SafeImage'
+import { LAYER_LOGO_URL } from '../lib/brand'
 import './assets-panel.css'
+import './library-polish.css'
+import './search-polish.css'
 
 export interface AssetsPanelProps {
   project: Project
@@ -69,12 +73,12 @@ const starterElements = (id: string): DesignElement[] => {
 
 const patternElement = (type: 'dots' | 'grid' | 'stripes'): DesignElement => makeElement('rect', { name: `${type[0].toUpperCase()}${type.slice(1)} pattern`, width: 360, height: 180, pattern: { enabled: true, type, scale: 1, spacing: 18, rotation: type === 'stripes' ? 45 : 0, opacity: 0.28, color: '#f5b847' }, fill: '#11151b', stroke: '#3a414d' })
 const savedPatternType = (asset: AssetRecord): 'dots' | 'grid' | 'stripes' => asset.metadata?.patternType === 'stripes' ? 'stripes' : asset.metadata?.patternType === 'dots' ? 'dots' : 'grid'
-const LAYER_LOGO_URL = new URL('../../img/09-logo-circle.png', import.meta.url).href
 
 export function AssetsPanel(props: AssetsPanelProps) {
   const { project, onCommit, onNotify } = props
   const [tab, setTab] = useState<AssetTab>('library')
   const [query, setQuery] = useState('')
+  const [libraryQuery, setLibraryQuery] = useState('')
   const [category, setCategory] = useState('all')
   const [page, setPage] = useState<CatalogPage | null>(null)
   const [pageNumber, setPageNumber] = useState(1)
@@ -166,7 +170,7 @@ export function AssetsPanel(props: AssetsPanelProps) {
     <PanelHeading kicker="ASSETS" title="Library" icon="layers" />
     <div className="panel-tabs" role="tablist" aria-label="Asset library sections">{(['library', 'marketplace', 'fonts', 'icons', 'components', 'tokens'] as AssetTab[]).map((item) => <button key={item} type="button" role="tab" aria-selected={tab === item} className={tab === item ? 'active' : ''} onClick={() => { setTab(item); if (item !== 'marketplace') setError(null) }}>{item === 'marketplace' ? 'Marketplace' : item[0].toUpperCase() + item.slice(1)}</button>)}</div>
      {error && <div className="error-callout" role="alert"><Icon name="warning" size={14} /><span>{error}</span><button type="button" className="mini-link" onClick={() => setError(null)}>Dismiss</button></div>}
-     {tab === 'library' && <LibraryView project={project} onUpload={props.onUpload} onInsert={insert} onQuickInsert={insertQuick} onQuickShape={insertShape} onLogo={insertLogo} onNotify={onNotify} />}
+      {tab === 'library' && <LibraryView project={project} onUpload={props.onUpload} onInsert={insert} onQuickInsert={insertQuick} onQuickShape={insertShape} onLogo={insertLogo} onNotify={onNotify} query={libraryQuery} onQuery={setLibraryQuery} />}
     {tab === 'marketplace' && <MarketplaceView page={page} categories={categories} category={category} query={query} pageNumber={pageNumber} loading={loading} busyId={busyId} onCategory={(value) => { setCategory(value); setPageNumber(1) }} onQuery={(value) => { setQuery(value); setPageNumber(1) }} onPage={setPageNumber} onInstall={(item) => void installItem(item)} onRefresh={() => setCatalogNonce((value) => value + 1)} />}
     {tab === 'fonts' && <IntegrationView title="Google Fonts" integration={integration('google-fonts')} category="font" onInstall={() => void installIntegration('google-fonts')} onUpdate={() => void updateIntegrationCatalog('google-fonts', 'font')} onRemove={() => removeIntegration('google-fonts')} onDisable={() => updateIntegration('google-fonts', { enabled: false })} onEnable={() => updateIntegration('google-fonts', { enabled: true })} onBrowse={() => { setCategory('font'); setTab('marketplace') }} assets={installedAssets.filter((asset) => asset.kind === 'font')} />}
     {tab === 'icons' && <IntegrationView title="Iconify" integration={integration('iconify')} category="icon" onInstall={() => void installIntegration('iconify')} onUpdate={() => void updateIntegrationCatalog('iconify', 'icon')} onRemove={() => removeIntegration('iconify')} onDisable={() => updateIntegration('iconify', { enabled: false })} onEnable={() => updateIntegration('iconify', { enabled: true })} onBrowse={() => { setCategory('icon'); setTab('marketplace') }} assets={installedAssets.filter((asset) => asset.kind === 'icon')} />}
@@ -175,18 +179,30 @@ export function AssetsPanel(props: AssetsPanelProps) {
   </div>
 }
 
-function LibraryView({ project, onUpload, onInsert, onQuickInsert, onQuickShape, onLogo, onNotify }: { project: Project; onUpload: () => void; onInsert: (elements: DesignElement[]) => void; onQuickInsert: (type: 'text' | 'button' | 'rect' | 'circle' | 'image' | 'icon') => void; onQuickShape: (shape: ShapeVariant) => void; onLogo: () => void; onNotify: (message: string) => void }) {
-  const patterns = project.assets.filter((asset) => asset.kind === 'pattern')
-  const localAssets = project.assets.filter((asset) => asset.kind !== 'pattern')
-  return <>
-    <div className="asset-intro"><span className="signal-dot" /> Installed content is available without an AI account.</div>
-     <section className="asset-subsection"><div className="subsection-heading">Quick insert <span>real editable layers</span></div><div className="starter-grid">{(['text', 'button', 'rect', 'circle', 'image', 'icon'] as const).map((type) => <button key={type} type="button" className="starter-tile" onClick={() => onQuickInsert(type)}><span className="starter-preview"><Icon name={type === 'text' ? 'text' : type === 'image' ? 'image' : type === 'icon' ? 'icon' : 'shape'} size={16} /></span><span>{type[0].toUpperCase() + type.slice(1)}</span></button>)}</div></section>
-     <section className="asset-subsection"><div className="subsection-heading">Symbols & logo marks <span>editable vectors and frames</span></div><div className="starter-grid shapes-grid">{SHAPE_OPTIONS.slice(1).map((option) => <button key={option.value} type="button" className="starter-tile" onClick={() => onQuickShape(option.value)}><span className={`starter-preview shape-preview shape-${option.value}`}><Icon name="shape" size={16} /></span><span>{option.label}</span></button>)}<button type="button" className="starter-tile" onClick={onLogo}><span className="starter-preview logo-preview"><img src={LAYER_LOGO_URL} alt="" /></span><span>Layer logo</span></button></div></section>
-    <section className="asset-subsection"><div className="subsection-heading">Starter layouts <span>multi-layer structures</span></div><div className="starter-grid">{(['starter-landing', 'starter-dashboard', 'starter-contact'] as const).map((id) => <button key={id} type="button" className="starter-tile" onClick={() => { onInsert(starterElements(id)); onNotify('Starter layout inserted as editable layers.') }}><span className={`starter-preview starter-layout-preview ${id.replace('starter-', '')}`} aria-hidden="true"><i /><b>{id === 'starter-dashboard' ? '12' : id === 'starter-contact' ? '→' : 'L'}</b></span><span>{id.replace('starter-', '')}</span></button>)}</div></section>
-    {patterns.length > 0 && <section className="asset-subsection"><div className="subsection-heading">Saved patterns <span>reusable fills</span></div><div className="starter-grid">{patterns.map((asset) => { const type = savedPatternType(asset); return <button key={asset.id} type="button" className="starter-tile" onClick={() => { onInsert([patternElement(type)]); onNotify(`${asset.name} inserted.`) }}><span className={`starter-preview pattern-${type}`} aria-hidden="true" /><span>{asset.name}</span></button> })}</div></section>}
-    <section className="asset-subsection"><div className="subsection-heading">Local assets</div><button type="button" className="upload-tile" onClick={onUpload}><Icon name="upload" /><span>Upload an image</span><small>PNG, JPG, SVG · kept in this project</small></button>{localAssets.length > 0 && <div className="asset-list">{localAssets.map((asset) => <div className="asset-list-row" key={asset.id}><span className="asset-thumb">{asset.kind === 'image' && asset.src ? <img src={asset.src} alt="" /> : <Icon name={asset.kind === 'font' ? 'type' : 'icon'} size={14} />}</span><span>{asset.name}</span><small>{asset.source} · {asset.license}</small></div>)}</div>}</section>
-  </>
+function LibraryView({ project, onUpload, onInsert, onQuickInsert, onQuickShape, onLogo, onNotify, query, onQuery }: { project: Project; onUpload: () => void; onInsert: (elements: DesignElement[]) => void; onQuickInsert: (type: 'text' | 'button' | 'rect' | 'circle' | 'image' | 'icon') => void; onQuickShape: (shape: ShapeVariant) => void; onLogo: () => void; onNotify: (message: string) => void; query: string; onQuery: (value: string) => void }) {
+  const normalizedQuery = query.trim().toLowerCase()
+  const matches = (...values: string[]) => !normalizedQuery || values.some((value) => value.toLowerCase().includes(normalizedQuery))
+  const quickTypes = (['text', 'button', 'rect', 'circle', 'image', 'icon'] as const).filter((type) => matches(type))
+  const shapeOptions = SHAPE_OPTIONS.slice(1).filter((option) => matches(option.label, option.value))
+  const showLogo = matches('layer logo', 'logo')
+  const layoutIds = (['starter-landing', 'starter-dashboard', 'starter-contact'] as const).filter((id) => matches(id.replace('starter-', ''), 'starter layout'))
+  const patterns = project.assets.filter((asset) => asset.kind === 'pattern' && matches(asset.name, asset.source, asset.license))
+  const localAssets = project.assets.filter((asset) => asset.kind !== 'pattern' && matches(asset.name, asset.source, asset.license, asset.kind))
+  const visibleCount = quickTypes.length + shapeOptions.length + (showLogo ? 1 : 0) + layoutIds.length + patterns.length + localAssets.length
+  const emptyMessage = (label: string) => normalizedQuery ? `No ${label.toLowerCase()} match “${query.trim()}”.` : `No ${label.toLowerCase()} are available yet.`
+
+  return <div className="library-view">
+    <div className="asset-intro library-intro"><div><strong>Build from a starting point</strong><p>Insert editable layers, structures, and local assets directly on the canvas.</p></div><span className="library-summary">{visibleCount} available</span></div>
+    <div className="library-search"><Icon name="search" size={14} /><label className="visually-hidden" htmlFor="assets-library-search">Search library</label><input id="assets-library-search" aria-label="Search library" value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Search starters, shapes, or assets" />{query && <button type="button" className="library-search-clear" onClick={() => onQuery('')} aria-label="Clear library search"><Icon name="close" size={13} /></button>}</div>
+    <section className="asset-subsection library-section"><div className="subsection-heading library-section-heading"><div><strong>Quick insert</strong><span>Editable layers</span></div><span className="library-section-count">{quickTypes.length}</span></div>{quickTypes.length ? <div className="starter-grid">{quickTypes.map((type) => <button key={type} type="button" className="starter-tile library-card" onClick={() => onQuickInsert(type)}><span className="starter-preview"><Icon name={type === 'text' ? 'text' : type === 'image' ? 'image' : type === 'icon' ? 'icon' : 'shape'} size={16} /></span><span>{type[0].toUpperCase() + type.slice(1)}</span></button>)}</div> : <LibraryEmpty message={emptyMessage('quick inserts')} />}</section>
+    <section className="asset-subsection library-section"><div className="subsection-heading library-section-heading"><div><strong>Symbols &amp; logo marks</strong><span>Editable vectors and frames</span></div><span className="library-section-count">{shapeOptions.length + (showLogo ? 1 : 0)}</span></div>{shapeOptions.length || showLogo ? <div className="starter-grid shapes-grid">{shapeOptions.map((option) => <button key={option.value} type="button" className="starter-tile library-card" onClick={() => onQuickShape(option.value)}><span className={`starter-preview shape-preview shape-${option.value}`}><Icon name="shape" size={16} /></span><span>{option.label}</span></button>)}{showLogo && <button type="button" className="starter-tile library-card" onClick={onLogo}><span className="starter-preview logo-preview"><SafeImage src={LAYER_LOGO_URL} alt="" fallbackKind="brand" /></span><span>Layer logo</span></button>}</div> : <LibraryEmpty message={emptyMessage('symbols')} />}</section>
+    <section className="asset-subsection library-section"><div className="subsection-heading library-section-heading"><div><strong>Starter layouts</strong><span>Multi-layer structures</span></div><span className="library-section-count">{layoutIds.length}</span></div>{layoutIds.length ? <div className="starter-grid">{layoutIds.map((id) => <button key={id} type="button" className="starter-tile library-card" onClick={() => { onInsert(starterElements(id)); onNotify('Starter layout inserted as editable layers.') }}><span className={`starter-preview starter-layout-preview ${id.replace('starter-', '')}`} aria-hidden="true"><i /><b>{id === 'starter-dashboard' ? '12' : id === 'starter-contact' ? '→' : 'L'}</b></span><span>{id.replace('starter-', '')}</span></button>)}</div> : <LibraryEmpty message={emptyMessage('starter layouts')} />}</section>
+    <section className="asset-subsection library-section"><div className="subsection-heading library-section-heading"><div><strong>Saved patterns</strong><span>Reusable fills</span></div><span className="library-section-count">{patterns.length}</span></div>{patterns.length ? <div className="starter-grid">{patterns.map((asset) => { const type = savedPatternType(asset); return <button key={asset.id} type="button" className="starter-tile library-card" onClick={() => { onInsert([patternElement(type)]); onNotify(`${asset.name} inserted.`) }}><span className={`starter-preview pattern-${type}`} aria-hidden="true" /><span>{asset.name}</span></button> })}</div> : <LibraryEmpty message={emptyMessage('saved patterns')} />}</section>
+    <section className="asset-subsection library-section"><div className="subsection-heading library-section-heading"><div><strong>Local assets</strong><span>Kept in this project</span></div><span className="library-section-count">{localAssets.length}</span></div><button type="button" className="upload-tile library-upload" onClick={onUpload}><Icon name="upload" /><span>Upload an image</span><small>PNG, JPG, SVG · local to this project</small></button>{localAssets.length ? <div className="asset-list">{localAssets.map((asset) => <div className="asset-list-row library-asset-row" key={asset.id}><span className="asset-thumb">{asset.kind === 'image' ? <SafeImage src={asset.src} alt={asset.name} /> : <Icon name={asset.kind === 'font' ? 'type' : 'icon'} size={14} />}</span><span>{asset.name}</span><small>{asset.source} · {asset.license}</small></div>)}</div> : <LibraryEmpty message={emptyMessage('local assets')} />}</section>
+  </div>
 }
+
+function LibraryEmpty({ message }: { message: string }) { return <div className="library-empty"><Icon name="search" size={16} /><span>{message}</span></div> }
 
 function MarketplaceView({ page, categories, category, query, pageNumber, loading, busyId, onCategory, onQuery, onPage, onInstall, onRefresh }: { page: CatalogPage | null; categories: Array<{ id: string; label: string }>; category: string; query: string; pageNumber: number; loading: boolean; busyId: string | null; onCategory: (value: string) => void; onQuery: (value: string) => void; onPage: (value: number) => void; onInstall: (item: CatalogItem) => void; onRefresh: () => void }) {
   return <div className="catalog-tab">
@@ -223,7 +239,7 @@ function CatalogPreview({ item }: { item: CatalogItem }) {
     void document.fonts?.ready.then(check).catch(() => undefined)
     return () => { alive = false }
   }, [item.id, item.kind, item.font?.family])
-  if (item.kind === 'icon') return <span className="catalog-preview catalog-preview-icon" aria-hidden="true">{src ? <img src={src} alt="" /> : <Icon name="icon" size={22} />}</span>
+  if (item.kind === 'icon') return <span className="catalog-preview catalog-preview-icon" aria-hidden="true">{src ? <SafeImage src={src} alt="" fallbackKind="icon" /> : <Icon name="icon" size={22} />}</span>
   if (item.kind === 'font') return <span className="catalog-preview catalog-preview-font" data-font-loaded={fontLoaded} style={{ fontFamily: fontLoaded ? `"${item.font?.family}", sans-serif` : 'Aptos, "Segoe UI", sans-serif' }}><span>Aa</span><small>{fontLoaded ? 'loaded' : 'system fallback'}</small></span>
   if (item.kind === 'pattern') return <span className={`catalog-preview catalog-preview-pattern ${item.id.includes('dots') ? 'pattern-dots' : item.id.includes('stripes') ? 'pattern-stripes' : 'pattern-grid'}`} aria-hidden="true" />
   const templateClass = item.id.endsWith('dashboard') ? 'template-dashboard' : item.id.endsWith('contact') ? 'template-contact' : 'template-landing'

@@ -6,6 +6,7 @@ import { containsRect, isDescendant, type Rect } from '../lib/geometry'
 import { ShapeVisual, shapeClipPath, shapeUsesRoundCorners } from '../lib/shapes'
 import { cutClipPath, zeroCorners } from '../lib/corner-values'
 import { Icon } from './Icon'
+import { SafeImage } from './SafeImage'
 
 export type FormStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -287,8 +288,8 @@ export function Prototype({ page, document: documentProp, project, width, height
   const renderBody = (element: DesignElement): ReactNode => {
     if (!activePage) return null
     const runtime = fields(element); const text = safeText(runtime.text ?? runtime.content); const image = sanitizePrototypeUrl(runtime.src, 'image'); const status = formStatuses[element.id] ?? 'idle'; const form = findFormFor(element); const formId = form ? `prototype-form-${form.id}` : undefined
-    if (element.type === 'image' && image) return <img src={image} alt={safeText(element.alt)} draggable={false} style={{ width: '100%', height: '100%', objectFit: runtime.imageFit ?? 'cover', objectPosition: runtime.imagePosition ?? 'center', display: 'block', pointerEvents: 'none' }} />
-    if (element.type === 'icon' && image) return <img src={image} alt={safeText(element.alt ?? element.iconName, 'Icon')} draggable={false} style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: runtime.imagePosition ?? 'center', padding: 12, display: 'block', pointerEvents: 'none' }} />
+    if (element.type === 'image') return <SafeImage src={image} alt={safeText(element.alt).trim() || safeText(element.name, 'Image')} draggable={false} style={{ width: '100%', height: '100%', objectFit: runtime.imageFit ?? 'cover', objectPosition: runtime.imagePosition ?? 'center', display: 'block', pointerEvents: 'none' }} />
+    if (element.type === 'icon' && image) return <SafeImage src={image} alt={safeText(element.alt ?? element.iconName, 'Icon')} fallbackKind="icon" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: runtime.imagePosition ?? 'center', padding: 12, display: 'block', pointerEvents: 'none' }} />
     if (element.type === 'icon') return <Icon name="icon" size={Math.max(18, Math.min(56, finite(element.width, 48) * .35))} />
     if (element.type === 'input') return <><input id={`prototype-input-${element.id}`} form={formId} type={runtime.inputType ?? 'text'} aria-label={element.name} aria-invalid={Boolean(formError(element))} aria-describedby={formError(element) ? `prototype-error-${element.id}` : undefined} placeholder={runtime.placeholder ?? text} value={values[element.id] ?? runtime.value ?? ''} required={Boolean(runtime.required)} onChange={(event) => setInputValue(element, event.target.value)} onFocus={(event) => runInteractions(element, 'focus', event.nativeEvent)} onClick={(event) => runInteractions(element, 'click', event.nativeEvent)} style={{ width: '100%', height: '100%', border: 0, background: 'transparent', color: 'inherit', outline: 'none', padding: 12, font: 'inherit' }} />{formError(element) && <span id={`prototype-error-${element.id}`} role="alert" style={{ position: 'absolute', top: '100%', left: 0, color: '#b42318', fontSize: 12 }}>{formError(element)}</span>}</>
     if (element.type === 'button') {
@@ -313,7 +314,9 @@ export function Prototype({ page, document: documentProp, project, width, height
     if (element.type === 'modal') return <div role="dialog" aria-label={element.name} aria-modal="true" tabIndex={-1} style={{ width: '100%', height: '100%' }}><button type="button" aria-label="Close" onClick={(event) => { event.stopPropagation(); setVisibility((current) => ({ ...current, [element.id]: false })) }}>×</button><div>{text}</div></div>
     if (element.type === 'nav') return <nav aria-label={element.name}>{text}</nav>
     if (element.type === 'line' || element.curve) return null
-    return text || (['circle', 'rect', 'frame', 'image'].includes(element.type) ? '' : element.type.toUpperCase())
+    // Empty containers are visual structure, not content. Never expose their
+    // internal type name in the visitor preview (for example, “SECTION”).
+    return text
   }
 
   if (!activePage || !layout) return null

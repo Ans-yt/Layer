@@ -1,0 +1,155 @@
+/* Minimalist, human-centered search controls. Calm by default, precise on focus. */
+.library-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  margin: 0 12px 8px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--panel-2) 42%, var(--ink));
+  color: var(--muted-2);
+  transition: border-color 180ms cubic-bezier(0.23, 1, 0.32, 1), 
+              background-color 180ms cubic-bezier(0.23, 1, 0.32, 1), 
+              box-shadow 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.library-search:hover {
+  background: color-mix(in srgb, var(--panel-2) 68%, var(--ink));
+  border-color: color-mix(in srgb, var(--line) 62%, transparent);
+}
+
+.library-search:focus-within {
+  border-color: var(--line);
+  background: var(--panel-2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 9%, transparent),
+              inset 0 1px 0 0 color-mix(in srgb, var(--text) 3%, transparent);
+}
+
+.library-search > svg {
+  flex: none;
+  color: var(--muted);
+  transition: color 140ms ease-out;
+}
+
+.library-search:focus-within > svg {
+  color: var(--amber);
+}
+
+.library-search input {
+  min-width: 0;
+  flex: 1;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  letter-spacing: -0.01em;
+}
+
+.library-search input::placeholder {
+  color: var(--muted-2);
+  font-weight: 400;
+}
+
+.library-search-clear {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted-2);
+  opacity: 0;
+  transition: opacity 140ms ease-out, background-color 140ms ease-out, color 140ms ease-out;
+}
+
+.library-search:hover .library-search-clear,
+.library-search:focus-within .library-search-clear {
+  opacity: 1;
+}
+
+.library-search-clear:hover,
+.library-search-clear:focus-visible {
+  background: color-mix(in srgb, var(--line) 28%, transparent);
+  color: var(--text);
+}
+
+.assets-panel .catalog-search,
+.connections-panel .catalog-search {
+  min-height: 38px;
+  padding-left: 9px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--panel-2) 42%, var(--ink));
+  transition: border-color 180ms cubic-bezier(0.23, 1, 0.32, 1), 
+              background-color 180ms cubic-bezier(0.23, 1, 0.32, 1), 
+              box-shadow 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.assets-panel .catalog-search:hover,
+.connections-panel .catalog-search:hover {
+  background: color-mix(in srgb, var(--panel-2) 68%, var(--ink));
+  border-color: color-mix(in srgb, var(--line) 62%, transparent);
+}
+
+.assets-panel .catalog-search:focus-within,
+.connections-panel .catalog-search:focus-within {
+  border-color: var(--line);
+  background: var(--panel-2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 9%, transparent),
+              inset 0 1px 0 0 color-mix(in srgb, var(--text) 3%, transparent);
+}
+
+.assets-panel .catalog-search > svg,
+.connections-panel .catalog-search > svg {
+  color: var(--muted);
+  transition: color 140ms ease-out;
+}
+
+.assets-panel .catalog-search:focus-within > svg,
+.connections-panel .catalog-search:focus-within > svg {
+  color: var(--amber);
+}
+
+.assets-panel .catalog-search input,
+.connections-panel .catalog-search input {
+  height: 34px;
+  color: var(--text);
+  font-size: 12px;
+  letter-spacing: -0.01em;
+}
+
+.assets-panel .catalog-search button,
+.connections-panel .catalog-search button {
+  min-height: 32px;
+  padding: 0 11px;
+  border: 0;
+  border-left: 1px solid color-mix(in srgb, var(--line) 68%, transparent);
+  border-radius: 0 6px 6px 0;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11px;
+  transition: color 140ms ease-out, background-color 140ms ease-out, border-color 140ms ease-out;
+}
+
+.assets-panel .catalog-search button:hover,
+.connections-panel .catalog-search button:hover {
+  background: color-mix(in srgb, var(--amber) 8%, transparent);
+  border-left-color: var(--line);
+  color: var(--amber-bright);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .library-search,
+  .assets-panel .catalog-search,
+  .connections-panel .catalog-search {
+    transition: none;
+  }
+}

@@ -5,7 +5,7 @@
 .color-picker-floating.color-picker-popover .color-transparent { background: repeating-conic-gradient(#a0a0a0 0% 25%, #eee 0% 50%) 0 / 8px 8px; }
 .color-picker.color-picker-control .color-picker-swatch { overflow: hidden; }
 .color-picker.color-picker-control .color-picker-swatch > span { display: block; width: 100%; height: 100%; }
-.color-picker-floating.color-picker-popover { position: fixed; z-index: 1800; box-sizing: border-box; width: min(288px, calc(100vw - 16px)); max-height: calc(100dvh - 16px); overflow: auto; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); box-shadow: 0 18px 48px rgba(0,0,0,.4); scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.color-picker-floating.color-picker-popover { position: fixed; z-index: 2600; box-sizing: border-box; width: min(288px, calc(100vw - 16px)); max-height: calc(100dvh - 16px); overflow: auto; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); box-shadow: 0 18px 48px rgba(0,0,0,.4); scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 .color-picker-floating.color-picker-popover .color-saturation { position: relative; height: 144px; overflow: hidden; border: 1px solid var(--line); border-radius: 5px; background-image: linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,transparent); cursor: crosshair; touch-action: none; }
 .color-picker-floating.color-picker-popover .color-hue,
 .color-picker-floating.color-picker-popover .color-alpha { position: relative; height: 20px; margin-top: 12px; border: 1px solid var(--line); border-radius: 4px; cursor: ew-resize; touch-action: none; }

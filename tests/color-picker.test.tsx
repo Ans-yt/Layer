@@ -66,6 +66,7 @@ describe('ColorPicker', () => {
     const dialog = find('[role="dialog"]')
     expect(dialog.parentElement).toBe(host)
     expect(find('.color-picker').contains(dialog)).toBe(false)
+    expect(dialog.style.zIndex).toBe('2600')
     expect(Number.parseFloat(dialog.style.left)).toBeGreaterThanOrEqual(8)
     expect(Number.parseFloat(dialog.style.top)).toBeGreaterThanOrEqual(8)
     const editorEscape = vi.fn(); document.addEventListener('keydown', editorEscape)

@@ -1,0 +1,385 @@
+/* Local library and skills surfaces. Keep the palette owned by the active theme. */
+.assets-panel .library-view {
+  padding-bottom: 16px;
+}
+
+.assets-panel .library-intro,
+.connections-panel .skills-library-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 13px;
+  padding: 12px 13px;
+  border: 1px solid var(--line-soft);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--panel-2) 74%, var(--panel));
+}
+
+.assets-panel .library-intro {
+  margin-bottom: 10px;
+}
+
+.assets-panel .library-intro strong,
+.connections-panel .skills-library-header h3 {
+  display: block;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+.assets-panel .library-intro p,
+.connections-panel .skills-library-header p {
+  max-width: 38ch;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.library-summary {
+  flex: none;
+  padding-top: 1px;
+  color: var(--muted-2);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.assets-panel .library-section {
+  padding: 15px 13px 16px;
+}
+
+.assets-panel .library-section + .library-section {
+  border-top: 0;
+}
+
+.library-section-heading {
+  align-items: flex-start;
+  min-height: 29px;
+  margin-bottom: 10px;
+}
+
+.library-section-heading > div:first-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.library-section-heading strong {
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.library-section-heading > div:first-child > span {
+  max-width: 30ch;
+  color: var(--muted-2);
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.library-section-count {
+  flex: none;
+  min-width: 20px;
+  color: var(--muted-2);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.assets-panel .library-section-heading > .library-section-count {
+  padding-top: 1px;
+}
+
+.assets-panel .library-card {
+  min-height: 70px;
+  border-color: var(--line-soft);
+  background: color-mix(in srgb, var(--panel) 88%, var(--panel-2));
+}
+
+.assets-panel .library-card:hover,
+.assets-panel .library-card:focus-visible {
+  border-color: color-mix(in srgb, var(--amber) 70%, var(--line));
+  background: color-mix(in srgb, var(--amber) 8%, var(--panel-2));
+}
+
+.assets-panel .library-card .starter-preview {
+  height: 39px;
+}
+
+.assets-panel .library-empty,
+.skills-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 10px;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--panel) 72%, var(--panel-2));
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.assets-panel .library-empty svg,
+.skills-empty svg {
+  flex: none;
+  color: var(--muted-2);
+}
+
+.assets-panel .library-upload {
+  min-height: 76px;
+  border-color: var(--line);
+  background: transparent;
+}
+
+.assets-panel .library-upload:hover,
+.assets-panel .library-upload:focus-visible {
+  background: color-mix(in srgb, var(--amber) 6%, var(--panel));
+}
+
+.assets-panel .library-asset-row {
+  min-height: 35px;
+  padding: 5px 4px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+}
+
+.assets-panel .library-asset-row:hover {
+  border-color: var(--line-soft);
+  background: var(--panel-2);
+}
+
+.connections-panel .skills-library {
+  padding: 0 0 18px;
+}
+
+.connections-panel .skills-library-header {
+  margin-bottom: 10px;
+}
+
+.connections-panel .skills-library-header p {
+  max-width: 42ch;
+}
+
+.connections-panel .skills-search {
+  margin-bottom: 12px;
+}
+
+.connections-panel .skills-library-section {
+  margin: 0 13px 12px;
+  padding: 13px;
+  border: 1px solid var(--line-soft);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--panel) 88%, var(--panel-2));
+}
+
+.connections-panel .library-section-heading {
+  gap: 10px;
+  margin-bottom: 11px;
+}
+
+.connections-panel .library-section-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.connections-panel .compact-button {
+  min-height: 28px;
+  padding: 0 8px;
+  border-color: var(--line);
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.connections-panel .compact-button:hover,
+.connections-panel .compact-button:focus-visible {
+  border-color: var(--amber);
+  color: var(--text);
+}
+
+.skills-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.connections-panel .skills-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  margin: 0;
+  padding: 11px;
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  background: var(--panel-2);
+}
+
+.connections-panel .skills-card:hover,
+.connections-panel .skills-card:focus-within {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--panel-2) 90%, var(--panel-3));
+}
+
+.skills-card-fields {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.skills-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.skills-field > span,
+.skills-toggle > span:first-child {
+  color: var(--muted-2);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.connections-panel .skills-field input,
+.connections-panel .skills-field textarea,
+.connections-panel .skills-field .select-trigger {
+  width: 100%;
+  min-width: 0;
+  border-color: var(--line);
+  background: var(--panel);
+  font-size: 10px;
+}
+
+.connections-panel .skills-field input {
+  height: 30px;
+}
+
+.connections-panel .skills-field textarea {
+  min-height: 66px;
+  padding: 7px;
+  line-height: 1.4;
+}
+
+.connections-panel .skills-field input:focus,
+.connections-panel .skills-field textarea:focus,
+.connections-panel .skills-field .select-trigger:focus-visible {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--amber) 12%, transparent);
+}
+
+.skills-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 18px;
+}
+
+.skills-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skills-toggle .switch {
+  flex: none;
+}
+
+.connections-panel .skills-card-actions .icon-button {
+  color: var(--muted-2);
+}
+
+.connections-panel .skills-card-actions .icon-button:hover,
+.connections-panel .skills-card-actions .icon-button:focus-visible {
+  border-color: color-mix(in srgb, var(--red) 55%, var(--line));
+  color: var(--red);
+}
+
+.skills-import {
+  display: grid;
+  gap: 8px;
+  margin-top: 11px;
+  padding-top: 11px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.skills-import-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.skills-import-heading strong,
+.skills-import-heading small {
+  display: block;
+}
+
+.skills-import-heading strong {
+  color: var(--text);
+  font-size: 10px;
+}
+
+.skills-import-heading small {
+  margin-top: 3px;
+  color: var(--muted-2);
+  font-size: 9px;
+}
+
+.skills-import-heading svg {
+  flex: none;
+  color: var(--muted-2);
+}
+
+.connections-panel .skills-import textarea {
+  width: 100%;
+  min-height: 58px;
+  padding: 7px;
+  border-color: var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.connections-panel .skills-import .secondary-button {
+  min-height: 30px;
+  background: transparent;
+}
+
+@container connections-panel (max-width: 390px) {
+  .connections-panel .skills-library-section {
+    margin-inline: 10px;
+    padding: 10px;
+  }
+
+  .connections-panel .skills-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .connections-panel .skills-card-actions {
+    justify-content: flex-end;
+    padding-top: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assets-panel .library-card,
+  .connections-panel .skills-card {
+    transition: none;
+  }
+}

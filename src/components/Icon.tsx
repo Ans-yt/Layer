@@ -8,11 +8,16 @@ type IconName =
   | 'arrow-left' | 'arrow-right' | 'align-left' | 'align-center' | 'align-right' | 'distribute' | 'sliders' | 'palette' | 'type'
   | 'mouse' | 'keyboard' | 'bolt' | 'command' | 'wand' | 'book' | 'plug' | 'code' | 'send' | 'paperclip' | 'check-circle'
   | 'move' | 'rotate' | 'maximize' | 'link' | 'unlink' | 'sun' | 'moon' | 'comment' | 'camera' | 'target' | 'download-cloud' | 'scissors'
+  | 'page' | 'home' | 'pin' | 'monitor'
 
 const paths: Record<IconName, ReactNode> = {
   cursor: <><path d="m5 3 5.6 17 3.4-7 7-3.4Z"/><path d="m14 14 5 5"/></>,
   hand: <><path d="M7 11V5a1.5 1.5 0 0 1 3 0v5"/><path d="M10 9V3.8a1.5 1.5 0 0 1 3 0V10"/><path d="M13 9V5a1.5 1.5 0 0 1 3 0v7"/><path d="M16 11V8.5a1.5 1.5 0 0 1 3 0v5.2c0 4.2-2.8 7.3-6.9 7.3h-.8C8 21 6.4 19 5 17l-2.2-3.2a1.5 1.5 0 0 1 2.5-1.7L7 14"/></>,
   frame: <><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16M4 9h16"/></>,
+  page: <><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></>,
+  home: <><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9M9 20v-6h6v6"/></>,
+  pin: <><path d="M8 4h8l-1 6 3 3H6l3-3Z"/><path d="M12 13v8"/></>,
+  monitor: <><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></>,
   text: <><path d="M4 5h16M12 5v14M8 19h8"/></>,
   shape: <><rect x="4" y="5" width="9" height="9" rx="2"/><circle cx="17.5" cy="16.5" r="3.5"/><path d="m16 4 4 4"/></>,
   image: <><rect x="3.5" y="4" width="17" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m5 17 4.5-4 3 2 2.5-2.5 5 4.5"/></>,

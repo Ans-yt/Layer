@@ -143,7 +143,7 @@ export function ColorPicker({ value, onChange, label, onStart, onEnd }: Props) {
     <button ref={trigger} type="button" className="color-picker-trigger" aria-label={`${label} color`} aria-expanded={open} aria-haspopup="dialog" aria-controls={open ? id : undefined} onClick={() => { if (open) { commit(); close() } else setOpen(true) }}>
       <span className="color-picker-swatch"><span style={{ background: value }} /></span><span>{value}</span><Icon name="chevron-down" size={12} />
     </button>
-    {open && portalHost && createPortal(<div ref={popover} id={id} className="color-picker-popover color-picker-floating" style={position} role="dialog" aria-label={`${label} color picker`} onKeyDown={(event) => event.stopPropagation()} onBlur={(event) => {
+    {open && portalHost && createPortal(<div ref={popover} id={id} className="color-picker-popover color-picker-floating" style={{ ...position, zIndex: 2600 }} role="dialog" aria-label={`${label} color picker`} onKeyDown={(event) => event.stopPropagation()} onBlur={(event) => {
       if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget) && !root.current?.contains(event.relatedTarget)) { commit(); close(false) }
     }}>
       <div className="color-saturation" role="slider" tabIndex={0} aria-label={`${label} saturation and brightness`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(hsv.s)} aria-valuetext={`${Math.round(hsv.s)}% saturation, ${Math.round(hsv.v)}% brightness. Left/right saturation; up/down brightness.`} style={{ backgroundColor: `hsl(${hsv.h} 100% 50%)` }} onPointerDown={(event) => startDrag(event, 'saturation')} onKeyDown={(event) => keyAdjust(event, 'saturation')}><i style={{ left: `${hsv.s}%`, top: `${100 - hsv.v}%` }} /></div>

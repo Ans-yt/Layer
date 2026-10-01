@@ -1,3 +1,5 @@
+import { getThemeDefaultBackground, type ThemeId } from './themes'
+
 export type ElementType =
   | 'frame'
   | 'section'
@@ -45,6 +47,9 @@ export interface Interaction {
   easing?: string
   repeat?: number
 }
+
+/** Whether a page background is still coupled to the workspace theme. */
+export type PageBackgroundProvenance = 'theme' | 'custom'
 
 export interface LayoutRules {
   mode: LayoutMode
@@ -127,6 +132,8 @@ export interface DesignElement {
   aspectRatioLocked?: boolean
   curve?: { x1: number; y1: number; x2: number; y2: number }
   overrides?: Record<string, string | number | boolean>
+  /** Saved viewport-specific edits used by the responsive layout resolver. */
+  responsive?: Record<string, Record<string, unknown>>
 }
 
 export interface Page {
@@ -135,6 +142,8 @@ export interface Page {
   width: number
   height: number
   background: string
+  /** Persisted so theme switches never overwrite an authored/imported color. */
+  backgroundProvenance?: PageBackgroundProvenance
   elements: DesignElement[]
   notes: string
   breakpoints: { id: string; name: string; width: number }[]
@@ -280,6 +289,69 @@ export const DEFAULT_VISION_PROMPT = `You are Layer's optional vision helper. In
 const now = () => new Date().toISOString()
 export const uid = (prefix = 'obj') => `${prefix}_${Math.random().toString(36).slice(2, 8)}_${Date.now().toString(36).slice(-4)}`
 
+export const isPageBackgroundProvenance = (value: unknown): value is PageBackgroundProvenance => value === 'theme' || value === 'custom'
+
+/** A page is theme-following only when the document says so explicitly. */
+export const pageFollowsTheme = (page: Pick<Page, 'backgroundProvenance'>): boolean => page.backgroundProvenance === 'theme'
+
+/** Mark a page background as authored. The element tree is left untouched. */
+export const setPageBackground = <T extends Page>(page: T, background: string): T => ({
+  ...page,
+  background,
+  backgroundProvenance: 'custom',
+})
+
+/** Return a page to the selected theme's default artboard color. */
+export const resetPageBackground = <T extends Page>(page: T, theme: ThemeId): T => ({
+  ...page,
+  background: getThemeDefaultBackground(theme),
+  backgroundProvenance: 'theme',
+})
+
+/** Update only theme-following pages; authored/imported page colors survive. */
+export const applyThemeToProject = (project: Project, theme: ThemeId): Project => ({
+  ...project,
+  pages: project.pages.map((page) => pageFollowsTheme(page) ? resetPageBackground(page, theme) : page),
+})
+
+/** A project-level helper for UI and AI paths that set a page background. */
+export const updateProjectPageBackground = (project: Project, pageId: string, background: string): Project => ({
+  ...project,
+  pages: project.pages.map((page) => page.id === pageId ? setPageBackground(page, background) : page),
+})
+
+/** A project-level explicit "follow theme" action for reset affordances. */
+export const resetProjectPageBackground = (project: Project, pageId: string, theme: ThemeId): Project => ({
+  ...project,
+  pages: project.pages.map((page) => page.id === pageId ? resetPageBackground(page, theme) : page),
+})
+
+export interface CreatePageOptions extends Partial<Page> {
+  theme?: ThemeId
+}
+
+/**
+ * Create a page with a persisted theme-following background by default.
+ * Passing `background` is treated as an explicit authored choice, even when
+ * it happens to equal the selected theme's default.
+ */
+export const createPage = (options: CreatePageOptions = {}): Page => {
+  const { theme = 'black', ...overrides } = options
+  const explicitBackground = typeof overrides.background === 'string'
+  const background = explicitBackground ? overrides.background! : getThemeDefaultBackground(theme)
+  const backgroundProvenance = overrides.backgroundProvenance ?? (explicitBackground ? 'custom' : 'theme')
+  return {
+    id: uid('page'), name: 'Page', width: 960, height: 760,
+    elements: [], notes: '', breakpoints: [{ id: uid('bp'), name: 'Desktop', width: 960 }, { id: uid('bp'), name: 'Phone', width: 390 }],
+    ...overrides,
+    background,
+    backgroundProvenance,
+  }
+}
+
+/** Backwards-friendly name for callers that use the model's make* vocabulary. */
+export const makePage = createPage
+
 export const defaultLayout = (): LayoutRules => ({
   mode: 'free', gap: 16, padding: 24, align: 'start', justify: 'start', wrap: false,
   widthRule: 'fixed', heightRule: 'fixed', overflow: 'visible',
@@ -310,35 +382,38 @@ export const makeElement = (type: ElementType, overrides: Partial<DesignElement>
   }
 }
 
-const createDemoPage = (): Page => {
-  const hero = makeElement('frame', { id: 'hero-frame', name: 'Hero / signal lane', x: 48, y: 48, width: 1000, height: 470, fill: '#11151b', stroke: '#3a414d', radius: 18, layout: { ...defaultLayout(), mode: 'free' } })
-  const eyebrow = makeElement('text', { id: 'hero-kicker', name: 'Kicker', x: 88, y: 94, width: 260, height: 22, text: 'A VISUAL BUILD SURFACE', fontSize: 12, fontWeight: 700, letterSpacing: 2.4, fill: 'transparent' })
-  const title = makeElement('text', { id: 'hero-title', name: 'Hero title', x: 88, y: 138, width: 540, height: 122, text: 'Make the next layer obvious.', fontSize: 54, fontWeight: 700, lineHeight: 1.05, fill: 'transparent' })
-  const copy = makeElement('text', { id: 'hero-copy', name: 'Hero copy', x: 92, y: 286, width: 420, height: 74, text: 'Design the structure, test the behavior, and leave a clean handoff. Layer keeps every decision in one document.', fontSize: 17, lineHeight: 1.5, fill: 'transparent' })
-  const cta = makeElement('button', { id: 'hero-cta', name: 'Primary action', x: 92, y: 392, width: 164, height: 48, text: 'Open canvas', fill: '#f5b847', stroke: '#f5b847', radius: 10, interactions: [{ id: 'int_cta', trigger: 'click', action: 'navigate', pageId: 'page-library' }] })
-  const rule = makeElement('line', { id: 'hero-rule', name: 'Signal rule', x: 680, y: 108, width: 278, height: 2, stroke: '#f5b847', strokeWidth: 2 })
-  const depth = makeElement('text', { id: 'hero-depth', name: 'Page marker', x: 694, y: 136, width: 244, height: 88, text: '01 / 04\nLAYERS IN MOTION', fontSize: 15, fontWeight: 700, lineHeight: 1.8, letterSpacing: 1.4, fill: 'transparent' })
-  const note = makeElement('card', { id: 'hero-note', name: 'Pinned note', x: 676, y: 292, width: 250, height: 116, fill: '#1a2029', stroke: '#4c5566', radius: 12, text: 'Prototype note\nKeep navigation sticky on desktop.', fontSize: 14, lineHeight: 1.55 })
-  const rail = makeElement('section', { id: 'rail', name: 'Three-column rail', x: 48, y: 556, width: 1000, height: 214, fill: '#0f1217', stroke: '#272d37', radius: 16 })
-  const card1 = makeElement('card', { id: 'rail-card-1', name: 'Document model', x: 80, y: 592, width: 278, height: 132, fill: '#181c23', text: '01  DOCUMENT\nPages, components, tokens, interactions — one source of truth.', fontSize: 14, lineHeight: 1.55 })
-  const card2 = makeElement('card', { id: 'rail-card-2', name: 'Responsive rules', x: 392, y: 592, width: 278, height: 132, fill: '#181c23', text: '02  RESPONSIVE\nPreview desktop, tablet, phone, or an arbitrary width.', fontSize: 14, lineHeight: 1.55 })
-  const card3 = makeElement('card', { id: 'rail-card-3', name: 'Builder handoff', x: 704, y: 592, width: 278, height: 132, fill: '#181c23', text: '03  HANDOFF\nExport structure and intent without leaking private keys.', fontSize: 14, lineHeight: 1.55 })
-  return { id: 'page-home', name: 'Home', width: 1096, height: 860, background: '#0b0c0e', elements: [hero, eyebrow, title, copy, cta, rule, depth, note, rail, card1, card2, card3], notes: 'A first page for testing the editor. The CTA navigates to the library page.', breakpoints: [{ id: 'bp-desktop', name: 'Desktop', width: 1096 }, { id: 'bp-tablet', name: 'Tablet', width: 768 }, { id: 'bp-phone', name: 'Phone', width: 390 }] }
+const responsiveElement = (element: DesignElement, responsive: Record<string, Record<string, unknown>>): DesignElement => ({ ...element, responsive })
+
+const createDemoPage = (theme: ThemeId = 'black'): Page => {
+  const heroResponsive = { tablet: { minWidth: 480, maxWidth: 839, x: 32, y: 32, width: 704, height: 400 }, phone: { minWidth: 0, maxWidth: 479, x: 16, y: 24, width: 358, height: 690 } }
+  const hero = responsiveElement(makeElement('frame', { id: 'hero-frame', name: 'Hero / signal lane', x: 48, y: 48, width: 1000, height: 470, fill: '#11151b', stroke: '#3a414d', radius: 18, layout: { ...defaultLayout(), mode: 'free' } }), heroResponsive)
+  const eyebrow = responsiveElement(makeElement('text', { id: 'hero-kicker', name: 'Kicker', x: 88, y: 94, width: 260, height: 22, text: 'A VISUAL BUILD SURFACE', fontSize: 12, fontWeight: 700, letterSpacing: 2.4, fill: 'transparent' }), { tablet: { minWidth: 480, maxWidth: 839, x: 64, y: 72, width: 300 }, phone: { minWidth: 0, maxWidth: 479, x: 32, y: 52, width: 294, fontSize: 11, letterSpacing: 2 } })
+  const title = responsiveElement(makeElement('text', { id: 'hero-title', name: 'Hero title', x: 88, y: 138, width: 540, height: 122, text: 'Make the next layer obvious.', fontSize: 54, fontWeight: 700, lineHeight: 1.05, fill: 'transparent' }), { tablet: { minWidth: 480, maxWidth: 839, x: 64, y: 116, width: 370, height: 112, fontSize: 46 }, phone: { minWidth: 0, maxWidth: 479, x: 32, y: 96, width: 326, height: 100, fontSize: 34, lineHeight: 1.08 } })
+  const copy = responsiveElement(makeElement('text', { id: 'hero-copy', name: 'Hero copy', x: 92, y: 286, width: 420, height: 74, text: 'Design the structure, test the behavior, and leave a clean handoff. Layer keeps every decision in one document.', fontSize: 17, lineHeight: 1.5, fill: 'transparent' }), { tablet: { minWidth: 480, maxWidth: 839, x: 64, y: 244, width: 330, height: 104, fontSize: 16 }, phone: { minWidth: 0, maxWidth: 479, x: 32, y: 220, width: 326, height: 142, fontSize: 16, lineHeight: 1.45 } })
+  const cta = responsiveElement(makeElement('button', { id: 'hero-cta', name: 'Primary action', x: 92, y: 392, width: 164, height: 48, text: 'Open canvas', fill: '#f5b847', stroke: '#f5b847', radius: 10, interactions: [{ id: 'int_cta', trigger: 'click', action: 'navigate', pageId: 'page-library' }] }), { tablet: { minWidth: 480, maxWidth: 839, x: 64, y: 354 }, phone: { minWidth: 0, maxWidth: 479, x: 32, y: 394 } })
+  const rule = responsiveElement(makeElement('line', { id: 'hero-rule', name: 'Signal rule', x: 680, y: 108, width: 278, height: 2, stroke: '#f5b847', strokeWidth: 2 }), { tablet: { minWidth: 480, maxWidth: 839, x: 480, y: 86, width: 220 }, phone: { minWidth: 0, maxWidth: 479, x: 32, y: 480, width: 294 } })
+  const depth = responsiveElement(makeElement('text', { id: 'hero-depth', name: 'Page marker', x: 694, y: 136, width: 244, height: 88, text: '01 / 04\nLAYERS IN MOTION', fontSize: 15, fontWeight: 700, lineHeight: 1.8, letterSpacing: 1.4, fill: 'transparent' }), { tablet: { minWidth: 480, maxWidth: 839, x: 494, y: 118, width: 190, height: 72, fontSize: 13 }, phone: { minWidth: 0, maxWidth: 479, x: 32, y: 500, width: 294, height: 54, fontSize: 12, lineHeight: 1.5, letterSpacing: 1.1 } })
+  const note = responsiveElement(makeElement('card', { id: 'hero-note', name: 'Pinned note', x: 676, y: 292, width: 250, height: 116, fill: '#1a2029', stroke: '#4c5566', radius: 12, text: 'Prototype note\nKeep navigation sticky on desktop.', fontSize: 14, lineHeight: 1.55 }), { tablet: { minWidth: 480, maxWidth: 839, x: 462, y: 220, width: 240, height: 116, fontSize: 13 }, phone: { minWidth: 0, maxWidth: 479, x: 32, y: 566, width: 294, height: 100, fontSize: 13 } })
+  const rail = responsiveElement(makeElement('section', { id: 'rail', name: 'Three-column rail', x: 48, y: 556, width: 1000, height: 214, fill: '#0f1217', stroke: '#272d37', radius: 16 }), { tablet: { minWidth: 480, maxWidth: 839, x: 32, y: 468, width: 704, height: 196 }, phone: { minWidth: 0, maxWidth: 479, x: 16, y: 746, width: 358, height: 540 } })
+  const card1 = responsiveElement(makeElement('card', { id: 'rail-card-1', name: 'Document model', x: 80, y: 592, width: 278, height: 132, fill: '#181c23', text: '01  DOCUMENT\nPages, components, tokens, interactions — one source of truth.', fontSize: 14, lineHeight: 1.55 }), { tablet: { minWidth: 480, maxWidth: 839, x: 52, y: 500, width: 200, height: 132, fontSize: 13 }, phone: { minWidth: 0, maxWidth: 479, x: 32, y: 778, width: 326, height: 132, fontSize: 14 } })
+  const card2 = responsiveElement(makeElement('card', { id: 'rail-card-2', name: 'Responsive rules', x: 392, y: 592, width: 278, height: 132, fill: '#181c23', text: '02  RESPONSIVE\nPreview desktop, tablet, phone, or an arbitrary width.', fontSize: 14, lineHeight: 1.55 }), { tablet: { minWidth: 480, maxWidth: 839, x: 284, y: 500, width: 200, height: 132, fontSize: 13 }, phone: { minWidth: 0, maxWidth: 479, x: 32, y: 928, width: 326, height: 132, fontSize: 14 } })
+  const card3 = responsiveElement(makeElement('card', { id: 'rail-card-3', name: 'Builder handoff', x: 704, y: 592, width: 278, height: 132, fill: '#181c23', text: '03  HANDOFF\nExport structure and intent without leaking private keys.', fontSize: 14, lineHeight: 1.55 }), { tablet: { minWidth: 480, maxWidth: 839, x: 516, y: 500, width: 200, height: 132, fontSize: 13 }, phone: { minWidth: 0, maxWidth: 479, x: 32, y: 1078, width: 326, height: 132, fontSize: 14 } })
+  return { id: 'page-home', name: 'Home', width: 1096, height: 860, background: getThemeDefaultBackground(theme), backgroundProvenance: 'theme', elements: [hero, eyebrow, title, copy, cta, rule, depth, note, rail, card1, card2, card3], notes: 'A first page for testing the editor. The CTA navigates to the library page.', breakpoints: [{ id: 'bp-desktop', name: 'Desktop', width: 1096 }, { id: 'bp-tablet', name: 'Tablet', width: 768 }, { id: 'bp-phone', name: 'Phone', width: 390 }] }
 }
 
-const createLibraryPage = (): Page => {
-  const header = makeElement('nav', { id: 'library-header', name: 'Library header', x: 48, y: 40, width: 900, height: 72, fill: '#13171d', stroke: '#343b49', text: 'Layer Library                                 Search / Filter', fontSize: 16, fontWeight: 700 })
-  const heading = makeElement('text', { id: 'library-heading', name: 'Library heading', x: 64, y: 164, width: 690, height: 76, text: 'Useful sections, not mystery boxes.', fontSize: 38, fontWeight: 700, fill: 'transparent' })
-  const tabs = makeElement('tabs', { id: 'library-tabs', name: 'Category tabs', x: 64, y: 272, width: 420, height: 50, fill: '#171c24', stroke: '#353c49', text: 'Sections     Patterns     Installed', fontSize: 14 })
-  const cardA = makeElement('card', { id: 'library-card-a', name: 'Pricing card', x: 64, y: 372, width: 260, height: 210, fill: '#171c24', text: 'PRICING\nA clear choice with a supporting note.\n\nAdd section', fontSize: 16, lineHeight: 1.55 })
-  const cardB = makeElement('card', { id: 'library-card-b', name: 'Form card', x: 350, y: 372, width: 260, height: 210, fill: '#171c24', text: 'FORM\nValidation, loading, success, error.\n\nAdd section', fontSize: 16, lineHeight: 1.55 })
-  const cardC = makeElement('card', { id: 'library-card-c', name: 'Footer card', x: 636, y: 372, width: 260, height: 210, fill: '#171c24', text: 'FOOTER\nA firm ending with one next action.\n\nAdd section', fontSize: 16, lineHeight: 1.55 })
-  const foot = makeElement('footer', { id: 'library-footer', name: 'Library footer', x: 64, y: 666, width: 832, height: 92, fill: '#101319', stroke: '#2c333e', text: 'Layer prototype · Add your own assets from the editor.', fontSize: 14 })
-  return { id: 'page-library', name: 'Library', width: 960, height: 820, background: '#0b0c0e', elements: [header, heading, tabs, cardA, cardB, cardC, foot], notes: 'A second page demonstrates navigation and a reusable section library.', breakpoints: [{ id: 'bp-library-desktop', name: 'Desktop', width: 960 }, { id: 'bp-library-phone', name: 'Phone', width: 390 }] }
+const createLibraryPage = (theme: ThemeId = 'black'): Page => {
+  const header = responsiveElement(makeElement('nav', { id: 'library-header', name: 'Library header', x: 48, y: 40, width: 900, height: 72, fill: '#13171d', stroke: '#343b49', text: 'Layer Library                                 Search / Filter', fontSize: 16, fontWeight: 700 }), { tablet: { minWidth: 480, maxWidth: 839, x: 32, y: 28, width: 704 }, phone: { minWidth: 0, maxWidth: 479, x: 16, y: 24, width: 358, height: 60, text: 'Layer Library  ·  Search / Filter', fontSize: 14 } })
+  const heading = responsiveElement(makeElement('text', { id: 'library-heading', name: 'Library heading', x: 64, y: 164, width: 690, height: 76, text: 'Useful sections, not mystery boxes.', fontSize: 38, fontWeight: 700, fill: 'transparent' }), { tablet: { minWidth: 480, maxWidth: 839, x: 48, y: 136, width: 600 }, phone: { minWidth: 0, maxWidth: 479, x: 24, y: 116, width: 342, height: 88, fontSize: 30, lineHeight: 1.1 } })
+  const tabs = responsiveElement(makeElement('tabs', { id: 'library-tabs', name: 'Category tabs', x: 64, y: 272, width: 420, height: 50, fill: '#171c24', stroke: '#353c49', text: 'Sections     Patterns     Installed', fontSize: 14 }), { tablet: { minWidth: 480, maxWidth: 839, x: 48, y: 252, width: 420 }, phone: { minWidth: 0, maxWidth: 479, x: 24, y: 222, width: 342, height: 58, text: 'Sections | Patterns | Installed', fontSize: 13 } })
+  const cardA = responsiveElement(makeElement('card', { id: 'library-card-a', name: 'Pricing card', x: 64, y: 372, width: 260, height: 210, fill: '#171c24', text: 'PRICING\nA clear choice with a supporting note.\n\nAdd section', fontSize: 16, lineHeight: 1.55 }), { tablet: { minWidth: 480, maxWidth: 839, x: 48, y: 344, width: 210 }, phone: { minWidth: 0, maxWidth: 479, x: 24, y: 314, width: 342, height: 180, fontSize: 15 } })
+  const cardB = responsiveElement(makeElement('card', { id: 'library-card-b', name: 'Form card', x: 350, y: 372, width: 260, height: 210, fill: '#171c24', text: 'FORM\nValidation, loading, success, error.\n\nAdd section', fontSize: 16, lineHeight: 1.55 }), { tablet: { minWidth: 480, maxWidth: 839, x: 278, y: 344, width: 210 }, phone: { minWidth: 0, maxWidth: 479, x: 24, y: 514, width: 342, height: 180, fontSize: 15 } })
+  const cardC = responsiveElement(makeElement('card', { id: 'library-card-c', name: 'Footer card', x: 636, y: 372, width: 260, height: 210, fill: '#171c24', text: 'FOOTER\nA firm ending with one next action.\n\nAdd section', fontSize: 16, lineHeight: 1.55 }), { tablet: { minWidth: 480, maxWidth: 839, x: 508, y: 344, width: 210 }, phone: { minWidth: 0, maxWidth: 479, x: 24, y: 714, width: 342, height: 180, fontSize: 15 } })
+  const foot = responsiveElement(makeElement('footer', { id: 'library-footer', name: 'Library footer', x: 64, y: 666, width: 832, height: 92, fill: '#101319', stroke: '#2c333e', text: 'Layer prototype · Add your own assets from the editor.', fontSize: 14 }), { tablet: { minWidth: 480, maxWidth: 839, x: 48, y: 590, width: 672 }, phone: { minWidth: 0, maxWidth: 479, x: 24, y: 934, width: 342, height: 92, fontSize: 13 } })
+  return { id: 'page-library', name: 'Library', width: 960, height: 820, background: getThemeDefaultBackground(theme), backgroundProvenance: 'theme', elements: [header, heading, tabs, cardA, cardB, cardC, foot], notes: 'A second page demonstrates navigation and a reusable section library.', breakpoints: [{ id: 'bp-library-desktop', name: 'Desktop', width: 960 }, { id: 'bp-library-phone', name: 'Phone', width: 390 }] }
 }
 
-export const createInitialProject = (): Project => {
-  const pages = [createDemoPage(), createLibraryPage()]
+export const createInitialProject = (theme: ThemeId = 'black'): Project => {
+  const pages = [createDemoPage(theme), createLibraryPage(theme)]
   const integrations: IntegrationRecord[] = [
     { id: 'google-fonts', name: 'Google Fonts', description: 'Browse and install font families from the Google Fonts catalog.', kind: 'fonts', enabled: true, installed: true, version: 'catalog', sourceUrl: 'https://fonts.google.com/', lastSynced: now() },
     { id: 'iconify', name: 'Iconify', description: 'Search open icon collections and place SVG icons on the canvas.', kind: 'icons', enabled: true, installed: true, version: 'api', sourceUrl: 'https://iconify.design/', lastSynced: now() },

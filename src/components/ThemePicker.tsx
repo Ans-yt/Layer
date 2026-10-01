@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Icon } from './Icon'
 import { THEMES, type ThemeId } from '../lib/themes'
+import type { PageBackgroundProvenance } from '../lib/model'
 import { ColorPicker } from './ColorPicker'
 import './theme.css'
 
@@ -50,7 +51,17 @@ export function ThemePicker({ value, onChange, compact = false }: ThemePickerPro
   </div>
 }
 
-export function ThemeChooser({ value, onChange, onClose, canvasBackground, onCanvasBackground }: { value: ThemeId; onChange: (value: ThemeId) => void; onClose: () => void; canvasBackground?: string; onCanvasBackground?: (value: string) => void }) {
+interface ThemeChooserProps {
+  value: ThemeId
+  onChange: (value: ThemeId) => void
+  onClose: () => void
+  canvasBackground?: string
+  canvasBackgroundProvenance?: PageBackgroundProvenance
+  onCanvasBackground?: (value: string) => void
+  onResetCanvasBackground?: () => void
+}
+
+export function ThemeChooser({ value, onChange, onClose, canvasBackground, canvasBackgroundProvenance, onCanvasBackground, onResetCanvasBackground }: ThemeChooserProps) {
   const dialogRef = useRef<HTMLElement>(null)
   const closeRef = useRef(onClose)
   closeRef.current = onClose
@@ -63,7 +74,13 @@ export function ThemeChooser({ value, onChange, onClose, canvasBackground, onCan
     }
     const frame = window.requestAnimationFrame(focusFirst)
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!dialogRef.current?.contains(event.target as Node)) return
+      const target = event.target instanceof Node ? event.target : null
+      const inPicker = target instanceof Element && Boolean(target.closest('.color-picker-floating'))
+      const dialog = dialogRef.current
+      if (!dialog || !dialog.contains(target) && !inPicker) return
+      // The picker is a portaled nested surface. Let its capture listener see
+      // Escape first rather than closing the chooser/editor behind it.
+      if (inPicker) return
       if (event.key === 'Escape') {
         event.preventDefault()
         event.stopPropagation()
@@ -71,7 +88,7 @@ export function ThemeChooser({ value, onChange, onClose, canvasBackground, onCan
         return
       }
       if (event.key !== 'Tab') return
-      const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+      const focusable = [...dialog.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
       if (!focusable.length) return
       const first = focusable[0]
       const last = focusable[focusable.length - 1]
@@ -95,7 +112,7 @@ export function ThemeChooser({ value, onChange, onClose, canvasBackground, onCan
     <section ref={dialogRef} className="theme-chooser" role="dialog" aria-modal="true" aria-labelledby="theme-chooser-title" onPointerDown={(event) => event.stopPropagation()}>
       <div className="theme-chooser-heading"><div><span className="panel-kicker">MAKE IT YOURS</span><h2 id="theme-chooser-title">Choose a workspace theme</h2><p>Switch the editor chrome without changing the design you are building.</p></div><button type="button" className="icon-button" onClick={() => closeRef.current()} aria-label="Close theme chooser"><Icon name="close" size={15} /></button></div>
        <ThemePicker value={value} onChange={onChange} />
-       {canvasBackground && onCanvasBackground && <div className="theme-canvas-surface"><div><strong>Canvas surface</strong><small>Theme changes stay in the chrome. Pick the artboard background separately.</small></div><ColorPicker label="Canvas background" value={canvasBackground} onChange={onCanvasBackground} /></div>}
+        {canvasBackground !== undefined && onCanvasBackground && <div className="theme-canvas-surface"><div><strong>Canvas surface</strong><small>{canvasBackgroundProvenance === 'theme' ? 'Following the selected theme default.' : 'Custom page color stays through theme changes.'}</small></div><div className="theme-canvas-controls"><ColorPicker label="Canvas background" value={canvasBackground} onChange={onCanvasBackground} />{canvasBackgroundProvenance === 'custom' && onResetCanvasBackground && <button type="button" className="secondary-button" onClick={onResetCanvasBackground}>Use theme default</button>}</div></div>}
       <div className="theme-chooser-footer"><span>Change it later from Connections → Themes.</span><button type="button" className="primary-button" onClick={() => closeRef.current()}>Use {THEMES.find((theme) => theme.id === value)?.name ?? 'theme'} <Icon name="arrow-right" size={14} /></button></div>
     </section>
   </div>

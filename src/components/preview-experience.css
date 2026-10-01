@@ -1,0 +1,264 @@
+.preview-experience {
+  --preview-bg: var(--layer-theme-workspace, var(--ink, #0b0c0e));
+  --preview-text: var(--layer-theme-text, var(--text, #f4f1e8));
+  --preview-muted: var(--layer-theme-muted, var(--muted, #8993a4));
+  --preview-line: var(--layer-theme-line, var(--line, #2b323e));
+  --preview-accent: var(--layer-theme-accent, var(--amber, #f5b847));
+  position: fixed;
+  z-index: 2400;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--preview-bg);
+  color: var(--preview-text);
+  isolation: isolate;
+}
+
+.preview-experience,
+.preview-experience * {
+  box-sizing: border-box;
+}
+
+.preview-experience__title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.preview-experience__exit {
+  position: absolute;
+  z-index: 4;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid color-mix(in srgb, var(--preview-line) 82%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--preview-bg) 78%, transparent);
+  color: var(--preview-muted);
+  cursor: pointer;
+  opacity: .78;
+  transition: border-color 150ms ease-out, color 150ms ease-out, background-color 150ms ease-out, opacity 150ms ease-out;
+  backdrop-filter: blur(8px);
+}
+
+.preview-experience__exit:hover {
+  border-color: var(--preview-accent);
+  background: color-mix(in srgb, var(--preview-bg) 62%, var(--preview-line));
+  color: var(--preview-text);
+  opacity: 1;
+}
+
+.preview-experience__exit:focus-visible {
+  outline: 2px solid var(--preview-accent);
+  outline-offset: 3px;
+  opacity: 1;
+}
+
+.preview-experience__stage {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  padding: clamp(44px, 7vh, 76px) 16px max(28px, env(safe-area-inset-bottom));
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: color-mix(in srgb, var(--preview-line) 90%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+.preview-experience__frame-box {
+  position: relative;
+  flex: none;
+}
+
+.preview-experience__desktop-page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-radius: 3px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, .36);
+  scrollbar-color: color-mix(in srgb, var(--preview-line) 90%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+.preview-device {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--preview-bg) 78%, #11161c);
+  box-shadow: 0 24px 72px rgba(0, 0, 0, .48), 0 7px 24px rgba(0, 0, 0, .24);
+}
+
+.preview-device__chassis {
+  position: relative;
+  width: 100%;
+}
+
+.preview-device--phone {
+  border-radius: 38px;
+  background: #11161c;
+}
+
+.preview-device--tablet {
+  border-radius: 34px;
+}
+
+.preview-device--monitor {
+  border-radius: 16px;
+  background: #11161c;
+}
+
+.preview-device__svg {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.preview-device__body {
+  fill: color-mix(in srgb, var(--preview-bg) 72%, #171d25);
+  stroke: color-mix(in srgb, var(--preview-line) 85%, #46515f);
+  stroke-width: 1.2;
+}
+
+.preview-device--phone .preview-device__body {
+  fill: #10151b;
+  stroke: #3b4653;
+}
+
+.preview-device__camera,
+.preview-device__speaker {
+  fill: none;
+  stroke: #697482;
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+.preview-device__camera-dot {
+  fill: #293541;
+  stroke: #758292;
+  stroke-width: .35;
+}
+
+.preview-device__screen {
+  position: absolute;
+  z-index: 1;
+  top: var(--preview-inset-top);
+  right: var(--preview-inset-x);
+  bottom: var(--preview-inset-bottom);
+  left: var(--preview-inset-x);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #0a0d11;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04), 0 0 0 1px rgba(0, 0, 0, .25);
+  scrollbar-color: color-mix(in srgb, var(--preview-line) 90%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+.preview-device--phone .preview-device__screen {
+  border-radius: 23px;
+}
+
+.preview-device__content {
+  position: relative;
+  overflow: visible;
+}
+
+.preview-device__stand {
+  position: relative;
+  display: flex;
+  height: var(--preview-stand-height);
+  align-items: center;
+  justify-content: flex-end;
+  flex-direction: column;
+}
+
+.preview-device__stand-neck {
+  display: block;
+  width: 76px;
+  height: 48px;
+  border: 1px solid #3b4653;
+  border-bottom: 0;
+  background: linear-gradient(90deg, #1a2028, #2a323c 48%, #1a2028);
+  clip-path: polygon(22% 0, 78% 0, 100% 100%, 0 100%);
+}
+
+.preview-device__stand-base {
+  display: block;
+  width: 220px;
+  height: 10px;
+  margin-bottom: 7px;
+  border: 1px solid #3b4653;
+  border-radius: 999px;
+  background: #202731;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, .28);
+}
+
+.preview-device__home {
+  position: absolute;
+  z-index: 2;
+  bottom: 11px;
+  left: 50%;
+  width: 34px;
+  height: 3px;
+  border-radius: 999px;
+  background: #54606d;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+
+.preview-device--tablet .preview-device__home {
+  bottom: 10px;
+  width: 8px;
+  height: 8px;
+  border: 1px solid #5c6875;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.preview-experience[data-reduced-motion="true"] .preview-experience__exit {
+  transition: none;
+}
+
+@media (max-width: 520px) {
+  .preview-experience__stage {
+    padding-right: 8px;
+    padding-left: 8px;
+    padding-top: 52px;
+  }
+
+  .preview-experience__exit {
+    top: max(10px, env(safe-area-inset-top));
+    right: max(10px, env(safe-area-inset-right));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preview-experience__exit {
+    transition: none;
+  }
+}

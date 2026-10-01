@@ -14,6 +14,7 @@ export interface ReviewPanelProps {
   onNotify: (message: string) => void
   onExport: () => void
   onCopy: () => void
+  onPreview?: () => void
   onRestoreSnapshot?: (id: string) => void
 }
 
@@ -56,7 +57,7 @@ const copyText = async (value: string, onNotify: (message: string) => void) => {
   try { await navigator.clipboard.writeText(value); onNotify('Page text copied.') } catch { onNotify('Clipboard is unavailable in this browser.') }
 }
 
-export function ReviewPanel({ project, page, onUpdate, onNotify, onExport, onCopy, onRestoreSnapshot }: ReviewPanelProps) {
+export function ReviewPanel({ project, page, onUpdate, onNotify, onExport, onCopy, onPreview, onRestoreSnapshot }: ReviewPanelProps) {
   const [running, setRunning] = useState(false)
   const [checked, setChecked] = useState(false)
   const [issues, setIssues] = useState<ReviewIssue[]>([])
@@ -169,7 +170,7 @@ export function ReviewPanel({ project, page, onUpdate, onNotify, onExport, onCop
 
   return <div className="workspace-panel review-panel">
     <PanelHeading kicker="REVIEW" title="Checks & handoff" icon="check-circle" />
-    <section className="review-card review-hero"><div><h3>Resolved document checks</h3><p>Contrast, responsive overflow, alt text, and touch targets for {page.name} at {page.width}px. Color checks cannot resolve images, gradients, or custom CSS.</p></div><button type="button" className="primary-button" onClick={runChecks} disabled={running}><Icon name={running ? 'refresh' : 'check-circle'} /> {running ? 'Checking…' : 'Run checks'}</button></section>
+     <section className="review-card review-hero"><div><h3>Review the build</h3><p>Run practical checks, then open the site as a visitor would see it—without editor chrome.</p></div><div className="review-hero-actions"><button type="button" className="primary-button" onClick={onPreview}><Icon name="play" /> Preview site</button><button type="button" className="secondary-button" onClick={runChecks} disabled={running}><Icon name={running ? 'refresh' : 'check-circle'} /> {running ? 'Checking…' : 'Run checks'}</button></div></section>
     <div className="issue-list" aria-live="polite">{issues.length ? issues.map((issue, index) => <div className={`issue-row ${issue.severity}`} key={`${issue.label}-${issue.id ?? index}`}><Icon name={issue.severity === 'warn' ? 'warning' : 'info'} size={15} /><div><strong>{issue.label}</strong><small>{issue.detail}</small></div></div>) : <div className="empty-panel compact"><Icon name="check-circle" size={20} /><p>{checked ? 'No obvious findings on this page.' : 'Run the checks to see page findings.'}</p></div>}</div>
     <section className="review-card compact-card"><div><h3>Page text</h3><p>Copy the document text without OCR.</p></div><button type="button" className="secondary-button" onClick={() => void copyText(nativePageText, onNotify)} disabled={!nativePageText}><Icon name="copy" /> Copy native text</button></section>
     <section className="review-card compact-card"><div><h3>Snapshots</h3><p>{snapshots.length} bounded document versions.</p></div>{snapshots.length ? <div className="snapshot-list">{snapshots.map((snapshot) => <div className="snapshot-row" key={snapshot.id}><div><strong>{snapshot.name}</strong><small>{new Date(snapshot.createdAt).toLocaleString()}</small></div><button type="button" className="mini-link" onClick={() => restore(snapshot)}>Restore</button><button type="button" className="icon-button tiny" aria-label={`Delete ${snapshot.name}`} onClick={() => deleteSnapshot(snapshot.id)}><Icon name="trash" size={13} /></button></div>)}</div> : <div className="empty-panel compact"><p>Save a snapshot from the canvas status bar to see it here.</p></div>}</section>

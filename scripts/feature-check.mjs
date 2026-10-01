@@ -13,7 +13,8 @@ try {
 
   // Themes: the six presets are selectable in parameters and remain chrome-only.
   await page.getByRole('button', { name: 'Connections', exact: true }).click()
-  await page.getByRole('button', { name: 'Themes', exact: true }).click()
+  await page.locator('.right-panel.panel-connections').waitFor({ state: 'visible' })
+  await page.locator('.connections-panel .panel-tabs button').filter({ hasText: 'Themes' }).click()
   const themes = page.locator('[role="radio"]')
   assert.equal(await themes.count(), 6, 'six theme presets are present')
   await page.getByRole('radio', { name: /Deep Blue/ }).click()
@@ -96,7 +97,7 @@ try {
   await page.locator('.canvas-element.element-text').filter({ hasText: 'Inline edit works' }).first().waitFor()
 
   // Review uses the same resolved foreground as the canvas for contrast.
-  await page.getByRole('button', { name: 'Review page', exact: true }).click()
+   await page.getByRole('button', { name: 'Review & settings', exact: true }).click()
   await page.getByRole('button', { name: 'Run checks', exact: true }).click()
   await page.waitForTimeout(260)
   assert.equal(await page.locator('.issue-row').filter({ hasText: 'Open canvas' }).count(), 0, 'button contrast is not falsely flagged')

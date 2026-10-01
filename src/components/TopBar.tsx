@@ -4,6 +4,7 @@ import { InlineRename } from './InlineRename'
 import type { Page, Project, ViewState } from '../lib/model'
 import type { SavedProjectSummary } from '../lib/storage'
 import { APP_ICON_URL } from '../lib/brand'
+import { SafeImage } from './SafeImage'
 
 interface Props {
   project: Project; page: Page; view: ViewState; saveState: 'saved' | 'saving' | 'recovered'
@@ -65,15 +66,15 @@ export function TopBar({ project, page, view, saveState, selectedCount, onUndo, 
     <div className="topbar-left">
       <div className="project-name-wrap" ref={projectArea}>
         {nameEditing ? <InlineRename value={project.name} label="Project name" onCommit={(name) => { setNameEditing(false); onRenameProject(name) }} onCancel={() => setNameEditing(false)} /> :
-          <button ref={projectTrigger} className="project-name" aria-expanded={projectsOpen} aria-controls={projectsId} data-tooltip="Switch or rename project" data-tooltip-side="bottom"
-            onClick={() => { setMoreOpen(false); onToggleProjects() }} onDoubleClick={beginRename}>
-            <img className="topbar-brand-icon" src={APP_ICON_URL} alt="" /><span>{project.name}</span><Icon name="chevron-down" size={12} />
+           <button type="button" ref={projectTrigger} className="project-name" aria-expanded={projectsOpen} aria-controls={projectsId} data-tooltip="Switch or rename project" data-tooltip-side="bottom"
+             onClick={() => { setMoreOpen(false); onToggleProjects() }} onDoubleClick={beginRename}>
+             <SafeImage className="topbar-brand-icon" src={APP_ICON_URL} alt="" fallbackKind="brand" /><span>{project.name}</span><Icon name="chevron-down" size={12} />
           </button>}
         {projectsOpen && <div className="popover projects-menu" id={projectsId} role="region" aria-label="Projects">
-          <div className="projects-menu-heading"><span>Projects</span><button className="mini-link" onClick={onNewProject}><Icon name="plus" size={13} /> New</button></div>
-          <button className="project-rename-action" onClick={beginRename}><Icon name="type" size={14} /> Rename current project</button>
-          <div className="saved-project-list">{savedProjects.length ? savedProjects.map((saved) =>
-            <button key={saved.id} className={saved.id === project.id ? 'current' : ''} aria-current={saved.id === project.id ? 'true' : undefined} onClick={() => { if (saved.id === project.id) onToggleProjects(); else onOpenProject(saved.id) }}>
+           <div className="projects-menu-heading"><span>Projects</span><button type="button" className="mini-link" onClick={onNewProject}><Icon name="plus" size={13} /> New</button></div>
+           <button type="button" className="project-rename-action" onClick={beginRename}><Icon name="type" size={14} /> Rename current project</button>
+           <div className="saved-project-list">{savedProjects.length ? savedProjects.map((saved) =>
+             <button type="button" key={saved.id} className={saved.id === project.id ? 'current' : ''} aria-current={saved.id === project.id ? 'true' : undefined} onClick={() => { if (saved.id === project.id) onToggleProjects(); else onOpenProject(saved.id) }}>
               <span>{saved.id === project.id ? project.name : saved.name}</span><small>{new Date(saved.updatedAt).toLocaleDateString()}</small>
             </button>) : <div className="projects-empty">Saved projects appear here after the first edit.</div>}</div>
         </div>}
@@ -81,21 +82,21 @@ export function TopBar({ project, page, view, saveState, selectedCount, onUndo, 
       </div>
       <div className="topbar-divider" />
       <div className="history-controls">
-        <button className="icon-button" onClick={onUndo} disabled={!canUndo} aria-label="Undo" data-tooltip={canUndo ? 'Undo' : 'Nothing to undo'} data-tooltip-shortcut={`${modifier} Z`} data-tooltip-side="bottom"><Icon name="undo" size={16} /></button>
-        <button className="icon-button" onClick={onRedo} disabled={!canRedo} aria-label="Redo" data-tooltip={canRedo ? 'Redo' : 'Nothing to redo'} data-tooltip-shortcut={`${modifier} Shift Z`} data-tooltip-side="bottom"><Icon name="redo" size={16} /></button>
+         <button type="button" className="icon-button" onClick={onUndo} disabled={!canUndo} aria-label="Undo" data-tooltip={canUndo ? 'Undo' : 'Nothing to undo'} data-tooltip-shortcut={`${modifier} Z`} data-tooltip-side="bottom"><Icon name="undo" size={16} /></button>
+         <button type="button" className="icon-button" onClick={onRedo} disabled={!canRedo} aria-label="Redo" data-tooltip={canRedo ? 'Redo' : 'Nothing to redo'} data-tooltip-shortcut={`${modifier} Shift Z`} data-tooltip-side="bottom"><Icon name="redo" size={16} /></button>
       </div>
     </div>
-    <div className="topbar-center"><span className="breadcrumb">{page.name}</span><span className="slash">/</span><span className="selection-count">{selectedCount ? `${selectedCount} selected` : 'Canvas'}</span></div>
+     <div className="topbar-center"><span className="breadcrumb"><Icon name="page" size={12} />{page.name}</span><span className="slash">/</span><span className="selection-count">{selectedCount ? `${selectedCount} selected` : 'Canvas'}</span></div>
     <div className="topbar-right">
-      <button className={`mode-button ${view.mode === 'preview' ? 'active' : ''}`} onClick={onPreview} aria-pressed={view.mode === 'preview'}><Icon name={view.mode === 'preview' ? 'pause' : 'play'} size={14} /> {view.mode === 'preview' ? 'Exit preview' : 'Preview'}</button>
-      <button className="topbar-button" onClick={onTutorial}><Icon name="book" size={14} /> Quick tour</button>
-      <button className="topbar-button" onClick={onShortcuts}><Icon name="keyboard" size={14} /> Shortcuts</button>
-      <div className="export-wrap" ref={exportArea}>
-        <button className="export-button" onClick={onExport}><Icon name="download" size={14} /> Export</button>
-        <button ref={exportTrigger} className="export-more" onClick={() => { if (projectsOpen) onToggleProjects(); setMoreOpen((value) => !value) }} aria-label="More export options" aria-expanded={moreOpen} aria-controls={exportsId} data-tooltip="Import and export options" data-tooltip-side="bottom"><Icon name="chevron-down" size={12} /></button>
-        {moreOpen && <div className="popover export-menu" id={exportsId} role="region" aria-label="File actions">
-          <button onClick={() => fileAction(onImport)}><Icon name="upload" /> Import Layer file</button>
-          <button onClick={() => fileAction(onExport)}><Icon name="download" /> Export package</button>
+       <button type="button" className={`mode-button ${view.mode === 'preview' ? 'active' : ''}`} onClick={onPreview} aria-pressed={view.mode === 'preview'}><Icon name={view.mode === 'preview' ? 'pause' : 'play'} size={14} /> {view.mode === 'preview' ? 'Exit preview' : 'Preview'}</button>
+       <button type="button" className="topbar-button" onClick={onTutorial}><Icon name="book" size={14} /> Quick tour</button>
+       <button type="button" className="topbar-button" onClick={onShortcuts}><Icon name="keyboard" size={14} /> Shortcuts</button>
+       <div className="export-wrap" ref={exportArea}>
+         <button type="button" className="export-button" onClick={onExport}><Icon name="download" size={14} /> Export</button>
+         <button type="button" ref={exportTrigger} className="export-more" onClick={() => { if (projectsOpen) onToggleProjects(); setMoreOpen((value) => !value) }} aria-label="More export options" aria-expanded={moreOpen} aria-controls={exportsId} data-tooltip="Import and export options" data-tooltip-side="bottom"><Icon name="chevron-down" size={12} /></button>
+         {moreOpen && <div className="popover export-menu" id={exportsId} role="region" aria-label="File actions">
+           <button type="button" onClick={() => fileAction(onImport)}><Icon name="upload" /> Import Layer file</button>
+           <button type="button" onClick={() => fileAction(onExport)}><Icon name="download" /> Export package</button>
           <a href="/" target="_blank" rel="noopener noreferrer" onClick={() => fileAction(() => {})}><Icon name="external" /> Open editor in new tab</a>
         </div>}
       </div>

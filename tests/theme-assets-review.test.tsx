@@ -67,6 +67,19 @@ describe('workspace themes', () => {
     expect(document.activeElement?.getAttribute('data-theme-id')).toBe('rose')
     expect(onChange).toHaveBeenCalledWith('rose')
   })
+
+  it('keeps the chooser mounted while Escape closes its portaled background picker', () => {
+    const onReset = vi.fn()
+    render(<ThemeChooser value="black" onChange={vi.fn()} onClose={vi.fn()} canvasBackground="#123456" canvasBackgroundProvenance="custom" onCanvasBackground={vi.fn()} onResetCanvasBackground={onReset} />)
+    click('123456')
+    const picker = document.body.querySelector<HTMLElement>('.color-picker-floating')
+    expect(picker?.style.zIndex).toBe('2600')
+    act(() => picker?.querySelector<HTMLElement>('[role="slider"]')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })))
+    expect(host!.querySelector('.theme-chooser')).toBeTruthy()
+    expect(document.body.querySelector('.color-picker-floating')).toBeNull()
+    click('Use theme default')
+    expect(onReset).toHaveBeenCalledOnce()
+  })
 })
 
 describe('asset and review panels', () => {

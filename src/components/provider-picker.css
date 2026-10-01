@@ -1,0 +1,276 @@
+/*
+ * Provider selection is a compact, high-signal surface. Keep these rules
+ * local to ConnectionsPanel so the editor's other lists keep their rhythm.
+ * Theme palettes supply every color; the fallbacks keep the component usable
+ * in isolated previews and tests.
+ */
+.connections-panel {
+  container: connections-panel / inline-size;
+}
+
+.connections-panel .provider-panel {
+  --provider-panel: var(--layer-theme-panel, var(--panel));
+  --provider-surface: var(--layer-theme-card, var(--panel-2));
+  --provider-control: var(--layer-theme-controls, var(--panel-2));
+  --provider-hover: var(--layer-theme-hover, var(--panel-3));
+  --provider-line: var(--layer-theme-line, var(--line));
+  --provider-line-soft: var(--layer-theme-line-soft, var(--line-soft));
+  --provider-text: var(--layer-theme-text, var(--text));
+  --provider-muted: var(--layer-theme-muted, var(--muted));
+  --provider-muted-2: var(--layer-theme-muted-2, var(--muted-2));
+  --provider-accent: var(--layer-theme-accent, var(--amber));
+  --provider-accent-bright: var(--layer-theme-accent-bright, var(--amber-bright));
+  --provider-active: var(--layer-theme-active, var(--panel-3));
+  --provider-green: var(--layer-theme-green, var(--green));
+  --provider-selection: var(--layer-theme-selection, var(--blue));
+
+  grid-template-columns: minmax(204px, .82fr) minmax(0, 1.55fr);
+  background: var(--provider-panel);
+}
+
+.connections-panel .provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px 12px 18px;
+  border-right-color: var(--provider-line-soft);
+}
+
+.connections-panel .provider-list > .panel-explainer {
+  margin: 0;
+  padding: 10px 11px;
+  border-color: var(--provider-line);
+  background: var(--provider-surface);
+  color: var(--provider-muted);
+  line-height: 1.45;
+}
+
+.connections-panel .provider-role {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+
+.connections-panel .provider-role .toggle-button {
+  justify-content: center;
+  width: 100%;
+  min-height: 32px;
+  padding: 0 8px;
+  border-color: var(--provider-line);
+  background: var(--provider-control);
+  color: var(--provider-muted);
+}
+
+.connections-panel .provider-role .toggle-button:hover:not(:disabled),
+.connections-panel .provider-role .toggle-button.active {
+  border-color: var(--provider-accent);
+  background: var(--provider-active);
+  color: var(--provider-text);
+}
+
+.connections-panel .provider-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "dot title"
+    "status status";
+  align-items: center;
+  gap: 0 9px;
+  width: 100%;
+  min-height: 78px;
+  margin: 0;
+  padding: 11px 11px 10px;
+  border: 1px solid var(--provider-line-soft);
+  border-radius: 9px;
+  background: var(--provider-surface);
+  color: var(--provider-muted);
+  text-align: left;
+  transition: background-color 140ms ease-out, border-color 140ms ease-out, box-shadow 140ms ease-out, color 140ms ease-out, transform 140ms ease-out;
+}
+
+.connections-panel .provider-row:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--provider-accent) 58%, var(--provider-line));
+  background: var(--provider-hover);
+  color: var(--provider-text);
+  transform: translateY(-1px);
+}
+
+.connections-panel .provider-row:focus-visible {
+  outline: 2px solid var(--provider-accent);
+  outline-offset: 3px;
+}
+
+.connections-panel .provider-row.active {
+  border-color: var(--provider-accent);
+  background: var(--provider-active);
+  color: var(--provider-text);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--provider-accent) 14%, transparent);
+}
+
+.connections-panel .provider-row:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.connections-panel .provider-row .provider-dot {
+  grid-area: dot;
+  width: 9px;
+  height: 9px;
+  margin-top: 1px;
+  border: 2px solid var(--provider-line);
+  background: transparent;
+  box-shadow: none;
+}
+
+.connections-panel .provider-row .provider-dot.connected {
+  border-color: var(--provider-green);
+  background: var(--provider-green);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--provider-green) 16%, transparent);
+}
+
+.connections-panel .provider-row-copy {
+  display: flex;
+  grid-area: title;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.connections-panel .provider-row-copy strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--provider-text);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connections-panel .provider-row .provider-model {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  color: var(--provider-muted-2);
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connections-panel .provider-row .provider-status {
+  grid-area: status;
+  min-width: 0;
+  margin-top: 10px;
+  overflow: hidden;
+  color: var(--provider-muted-2);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connections-panel .provider-row .provider-dot.connected ~ .provider-row-copy + .provider-status {
+  color: var(--provider-green);
+}
+
+.connections-panel .provider-detail {
+  min-width: 0;
+  padding: 18px 16px 24px;
+  background: var(--provider-panel);
+}
+
+.connections-panel .provider-detail-head {
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.connections-panel .provider-detail-head h3 {
+  color: var(--provider-text);
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.connections-panel .provider-detail-head .status-pill {
+  border-color: var(--provider-line);
+  background: var(--provider-control);
+  color: var(--provider-muted);
+}
+
+.connections-panel .provider-detail-head .status-pill.success {
+  border-color: color-mix(in srgb, var(--provider-green) 55%, var(--provider-line));
+  background: color-mix(in srgb, var(--provider-green) 12%, transparent);
+  color: var(--provider-green);
+}
+
+.connections-panel .provider-detail .full-field > span {
+  color: var(--provider-muted);
+  font-weight: 600;
+}
+
+.connections-panel .provider-detail .provider-note {
+  border-color: var(--provider-line-soft);
+  background: color-mix(in srgb, var(--provider-surface) 78%, transparent);
+  color: var(--provider-muted);
+}
+
+@container connections-panel (max-width: 640px) {
+  .connections-panel .provider-panel {
+    display: block;
+    min-height: 0;
+  }
+
+  .connections-panel .provider-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+    align-content: start;
+    border-right: 0;
+    border-bottom: 1px solid var(--provider-line-soft);
+  }
+
+  .connections-panel .provider-list > .panel-explainer,
+  .connections-panel .provider-list > .provider-role {
+    grid-column: 1 / -1;
+  }
+
+  .connections-panel .provider-row {
+    width: auto;
+  }
+
+  .connections-panel .provider-row .provider-dot {
+    display: block;
+  }
+
+  .connections-panel .provider-detail {
+    padding: 17px 13px 24px;
+  }
+}
+
+@container connections-panel (max-width: 330px) {
+  .connections-panel .provider-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .connections-panel .provider-detail-head {
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connections-panel .provider-row {
+    transition: none;
+  }
+
+  .connections-panel .provider-row:hover:not(:disabled),
+  .connections-panel .provider-row:active:not(:disabled) {
+    transform: none;
+  }
+}

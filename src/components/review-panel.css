@@ -48,6 +48,27 @@
   background: color-mix(in srgb, var(--panel-2) 68%, var(--panel));
 }
 
+.review-panel .review-hero-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.review-panel .review-hero-actions > button {
+  min-height: 36px;
+}
+
+@media (max-width: 440px) {
+  .review-panel .review-hero-actions {
+    width: 100%;
+  }
+
+  .review-panel .review-hero-actions > button {
+    flex: 1;
+  }
+}
+
 .review-panel .issue-list {
   padding: 0 13px;
 }
